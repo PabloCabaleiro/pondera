@@ -63,21 +63,13 @@ timeout_s: 240
 ### Backlog
 
 - [ ] **Runners**: `HTTPRunner`, `CLIRunner`, `NotebookRunner` (Jupyter/nbclient)...
-
 - [ ] **MCP (judge-side)**: config pass-through.
-
 - [ ] **Judging**: Multi-judge aggregation (mean/median/majority), caching by case hash.
-
 - [ ] **Config**: Project-level defaults (pondera.yaml), env/secret injection.
-
 - [ ] **Concurrency & timeouts**: global + per-case; graceful retries.
-
 - [ ] **Progress hooks**: optional progress(line) for runners & judge.
-
 - [ ] **Enhanced logging**: structured logs; cost/token usage capture (if available).
-
 - [ ] **Exports**: CSV/JSONL summaries for dashboards; simple HTML report.
-
 - [ ] **Pytest plugin** (auto-collect YAML cases via flags).
 
 ## Getting Involved
