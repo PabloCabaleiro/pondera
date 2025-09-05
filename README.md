@@ -4,17 +4,17 @@ Pondera is a lightweight, YAML-first framework to evaluate AI models and agents 
 
 ## Why Pondera?
 
-- YAML as single source of truth – All test inputs & expectations live in YAML files (decoupled from code).
-- Model-agnostic – Evaluate Python callables, HTTP services, or anything else via runners.
-- Typed judging – LLM judge returns a strict Judgment schema (Pydantic).
-- **MCP-ready judge – Optional MCP tools/resources available to the judge (configurable & allow-listed).
+- **YAML as single source of truth** – All test inputs & expectations live in YAML files (decoupled from code).
+- **Model-agnostic** – Evaluate Python callables, HTTP services, or anything else via runners.
+- **Typed judging** – LLM judge returns a strict Judgment schema (Pydantic).
+- **MCP-ready judge** – Optional MCP tools/resources available to the judge (configurable & allow-listed).
 - **Portable** – Use the CLI, a tiny Python API, or a pytest helper (pytest is optional).
 - **Reproducible** – Standard artifacts (answer.md, judgment.json, summary.md, meta.json) per case.
 
 ## Core Concepts
 
 - **Case (YAML)**: Defines the input (query, attachments, params), pre-judge expectations, judge request, rubric overrides, thresholds, and optional MCP config.
-- **Runner**: How to obtain the answer being evaluated (e.g., a Python function, an HTTP endpoint). Returns a standard RunResult.
+- **Runner**: Contract about how to obtain the answer being evaluated (e.g., a Python function, an HTTP endpoint). Returns a standard RunResult.
 - **Judge**: Scores the answer according to a rubric and returns a structured Judgment (overall score, per-criterion scores, issues, suggestions).
 
 ## High-Level YAML Shape (for context)
@@ -54,7 +54,7 @@ timeout_s: 240
 - [ ] **Schemas**: `CaseSpec`, `RubricCriterion`/`Rubric`, `RunResult`, `Judgment`.
 - [ ] **Runners**: `PythonCallableRunner`.
 - [ ] **Judge**: `PydanticAIJudge` (typed JSON result, model-agnostic).
-- [ ] **API**: e`valuate_case(...)` (sync wrapper calling async core).
+- [ ] **API**: `evaluate_case(...)` (sync wrapper calling async core).
 - [ ] **CLI**: `pondera run <cases_dir> --runner ... --artifacts ....`
 - [ ] **Pytest helper**: `load_cases()`, `run_case()`; sample test file using parametrize.
 - [ ] **Artifacts**: `answer.md`, `judgment.json`, `summary.md`, `meta.json`.
@@ -64,7 +64,7 @@ timeout_s: 240
 
 - [ ] **Runners**: `HTTPRunner`, `CLIRunner`, `NotebookRunner` (Jupyter/nbclient)...
 
-- [ ] **MCP (judge-side)**: config pass-through; optional tool allowlist.
+- [ ] **MCP (judge-side)**: config pass-through.
 
 - [ ] **Judging**: Multi-judge aggregation (mean/median/majority), caching by case hash.
 
@@ -85,4 +85,3 @@ timeout_s: 240
 - **Issues / Ideas**: Propose runner/judge adapters, schema tweaks, or MCP use-cases.
 - **Contributions**: PRs welcome once the v0.1 schema stabilizes (tests + docs).
 - **License**: MIT (proposed; confirm before first release).
-
