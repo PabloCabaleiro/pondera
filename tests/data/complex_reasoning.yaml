@@ -1,0 +1,28 @@
+id: complex-reasoning
+input:
+  query: "Explain the difference between machine learning and artificial intelligence"
+  attachments: []
+  params:
+    expected_length: "medium"
+    technical_level: "intermediate"
+expect:
+  must_contain: ["machine learning", "artificial intelligence", "difference"]
+  regex_must_match: ["(?i)(subset|part of|type of)", "(?i)(broader|wider)"]
+judge:
+  request: "Assess the quality and accuracy of the explanation about ML vs AI"
+  overall_threshold: 75
+  per_criterion_thresholds:
+    technical_accuracy: 80
+    clarity: 70
+    completeness: 70
+  rubric:
+    - name: technical_accuracy
+      weight: 0.4
+      description: "Are the definitions and distinctions technically correct?"
+    - name: clarity
+      weight: 0.3
+      description: "Is the explanation easy to understand?"
+    - name: completeness
+      weight: 0.3
+      description: "Does it cover the key differences comprehensively?"
+timeout_s: 180

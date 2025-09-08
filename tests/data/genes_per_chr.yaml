@@ -1,0 +1,30 @@
+id: genes_per_chr
+input:
+  query: "Give me a plot with the number of genes per chromosome"
+  params:
+    mode: "explain+code"
+expect:
+  must_contain: ["genes per chromosome", "plot"]
+  regex_must_match: ["(?i)steps?:", "(?i)reproduce|reproduc"]
+judge:
+  request: |
+    Judge whether the answer produces (or clearly describes how to produce)
+    a valid plot of the number of genes per chromosome. Penalize vague steps.
+  overall_threshold: 70
+  per_criterion_thresholds:
+    correctness: 70
+    completeness: 60
+  rubric:
+    - name: correctness
+      weight: 0.4
+      description: Facts are accurate; no hallucinations.
+    - name: completeness
+      weight: 0.3
+      description: Covers the task end-to-end with necessary detail.
+    - name: methodology_repro
+      weight: 0.2
+      description: Steps clear enough to reproduce.
+    - name: presentation
+      weight: 0.1
+      description: Clear structure and formatting.
+timeout_s: 240

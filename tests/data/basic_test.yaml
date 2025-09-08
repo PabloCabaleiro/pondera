@@ -1,0 +1,22 @@
+id: basic-test
+input:
+  query: "What is the capital of France?"
+  attachments: []
+  params: {}
+expect:
+  must_contain: ["Paris", "capital", "France"]
+  regex_must_match: ["(?i)paris"]
+judge:
+  request: "Judge if the answer correctly identifies Paris as the capital of France"
+  overall_threshold: 70
+  per_criterion_thresholds:
+    correctness: 80
+    clarity: 60
+  rubric:
+    - name: correctness
+      weight: 0.7
+      description: "Is the answer factually correct?"
+    - name: clarity
+      weight: 0.3
+      description: "Is the answer clear and well-expressed?"
+timeout_s: 120

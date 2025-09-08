@@ -1,0 +1,7 @@
+id: integration_math_test
+input:
+  query: "What is 2 + 2?"
+expect:
+  must_contain: ["4"]
+judge:
+  overall_threshold: 90

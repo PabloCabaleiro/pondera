@@ -1,0 +1,22 @@
+id: nested-test
+input:
+  query: "What are the three primary colors?"
+  attachments: []
+  params: {}
+expect:
+  must_contain: ["red", "blue", "yellow"]
+  regex_must_match: ["(?i)primary.{0,20}colors?"]
+judge:
+  request: "Verify that the answer correctly lists red, blue, and yellow as primary colors"
+  overall_threshold: 80
+  per_criterion_thresholds:
+    completeness: 85
+    accuracy: 90
+  rubric:
+    - name: completeness
+      weight: 0.6
+      description: "Are all three primary colors mentioned?"
+    - name: accuracy
+      weight: 0.4
+      description: "Are the colors correctly identified as primary?"
+timeout_s: 90

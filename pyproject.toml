@@ -1,0 +1,51 @@
+[project]
+name = "pondera"
+version = "0.1.0"
+description = "YAML-first, pluggable runners & LLM-as-a-judge evaluation framework."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Pablo Cabaleiro" }]
+dependencies = [
+    "pydantic>=2.11.7",
+    "pydantic-ai>=1.0.1",
+    "pydantic-settings>=2.10.1",
+    "pyyaml>=6.0.2",
+    "typer>=0.17.4",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17.1",
+    "pre-commit>=4.0.1",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.1.0",
+    "ruff>=0.12.12",
+    "types-pyyaml>=6.0.12.20250822",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+pretty = true
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+disallow_untyped_defs = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pondera"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/pondera", "README.md", "LICENSE*", "pyproject.toml"]
+
+[project.scripts]
+pondera = "pondera.cli:app"

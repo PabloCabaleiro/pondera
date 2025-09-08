@@ -1,0 +1,7 @@
+id: integration_basic_test
+input:
+  query: "What is the capital of France?"
+expect:
+  must_contain: ["Paris"]
+judge:
+  overall_threshold: 70

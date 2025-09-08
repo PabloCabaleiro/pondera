@@ -1,0 +1,30 @@
+id: high-threshold-test
+input:
+  query: "Write a haiku about programming"
+  attachments: []
+  params:
+    format: "haiku"
+    topic: "programming"
+expect:
+  must_contain: ["code", "program"]
+  regex_must_match: ["(?i)\\b\\w+\\s+\\w+\\s+\\w+\\s+\\w+\\s+\\w+\\b", "(?i)(lines?|code|debug|compile)"]
+judge:
+  request: |
+    Evaluate if the response is a proper haiku (5-7-5 syllables) about programming.
+    Check syllable count carefully and ensure programming relevance.
+  overall_threshold: 95
+  per_criterion_thresholds:
+    format_compliance: 100
+    topic_relevance: 90
+    creativity: 85
+  rubric:
+    - name: format_compliance
+      weight: 0.5
+      description: "Does it follow the 5-7-5 syllable structure?"
+    - name: topic_relevance
+      weight: 0.3
+      description: "Is it clearly about programming?"
+    - name: creativity
+      weight: 0.2
+      description: "Is it creative and well-crafted?"
+timeout_s: 150

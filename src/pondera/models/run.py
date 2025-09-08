@@ -1,0 +1,24 @@
+# run.py
+
+from typing import Any
+
+from pydantic import BaseModel, Field, ConfigDict
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Runner output (what the runner must return)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class RunResult(BaseModel):
+    """
+    Standardized runner output. The judge consumes `answer_markdown`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    question: str
+    answer_markdown: str = Field(default="")
+    # absolute or relative paths to generated files (optional)
+    artifacts: list[str] = Field(default_factory=list)
+    # any useful metadata (steps, timings, costs, tool usage, etc.)
+    metadata: dict[str, Any] = Field(default_factory=dict)

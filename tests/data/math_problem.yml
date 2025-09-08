@@ -1,0 +1,24 @@
+id: math-problem
+input:
+  query: "What is 2 + 2?"
+  attachments: []
+  params:
+    difficulty: "basic"
+    subject: "arithmetic"
+expect:
+  must_contain: ["4"]
+  regex_must_match: ["(?i)(equals?|is|=)\\s*4"]
+judge:
+  request: "Evaluate if the mathematical calculation is correct"
+  overall_threshold: 90
+  per_criterion_thresholds:
+    correctness: 95
+    explanation: 70
+  rubric:
+    - name: correctness
+      weight: 0.8
+      description: "Is the mathematical result accurate?"
+    - name: explanation
+      weight: 0.2
+      description: "Does the response show the calculation process?"
+timeout_s: 60

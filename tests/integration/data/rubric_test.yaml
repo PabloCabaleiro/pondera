@@ -1,0 +1,16 @@
+id: integration_rubric_test
+input:
+  query: "Explain photosynthesis"
+  params:
+    detail_level: "basic"
+expect:
+  must_contain: ["photosynthesis", "sunlight"]
+judge:
+  overall_threshold: 80
+  rubric:
+    - name: "accuracy"
+      description: "Is the scientific information correct?"
+      weight: 0.6
+    - name: "completeness"
+      description: "Does the answer cover key concepts?"
+      weight: 0.4
