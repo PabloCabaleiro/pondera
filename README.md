@@ -101,13 +101,13 @@ Artifacts are written under `<artifacts>/<case_id>/`.
 
 ```python
 from pondera.api import evaluate_case
-from pondera.judge.pydantic_ai import PydanticAIJudge
+from pondera.judge.pydantic_ai import Judge
 
 class DemoRunner:
     async def run(self, *, question, attachments=None, params=None, progress=None):
         return {"answer_markdown": f"# Answer\n\nEcho: **{question}**\n"}
 
-res = evaluate_case("eval/cases/hello.yaml", runner=DemoRunner(), judge=PydanticAIJudge())
+res = evaluate_case("eval/cases/hello.yaml", runner=DemoRunner(), judge=Judge())
 print(res.passed, res.judgment.score)
 ```
 
@@ -121,7 +121,7 @@ def test_hello_case():
   class DemoRunner:
     async def run(self, *, question, attachments=None, params=None, progress=None):
       return {"answer_markdown": f"Answer: {question}"}
-  res = evaluate_case("eval/cases/hello.yaml", runner=DemoRunner(), judge=PydanticAIJudge())
+  res = evaluate_case("eval/cases/hello.yaml", runner=DemoRunner(), judge=Judge())
   assert res.passed
 ```
 

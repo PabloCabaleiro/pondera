@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Schemas**: `CaseSpec`, `RubricCriterion`/`Rubric`, `RunResult`, `Judgment`.
-- **Judge**: `PydanticAIJudge` (typed JSON result, model-agnostic).
+- **Judge**: `Judge` (typed JSON result, model-agnostic).
 - **API**: `evaluate_case(...)` (sync wrapper calling async core).
 - **CLI**: `pondera run <cases_dir> --runner ... --artifacts ....`
 - **Pytest helper**: `load_cases()`, `run_case()`; sample test file using parametrize.
