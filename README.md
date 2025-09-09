@@ -142,6 +142,7 @@ Input: `query: str`, optional `attachments: [paths]`, `params: {free-form}`.
 Expect (all optional lists): `must_contain`, `must_not_contain`, `regex_must_match`.
 Judge: `request` (instructions for judge), `overall_threshold` (default 70), `per_criterion_thresholds` (dict), optional `rubric` (list of {name, weight, description}), `model` (override), `system_append` (extra system guidance).
 Timeout: `timeout_s` (default 240).
+Repetitions: `repetitions` (default 1) – if >1, you can call the multi API to measure reproducibility.
 
 ## Artifacts
 
@@ -150,6 +151,8 @@ answer.md (raw markdown answer)
 judgment.json (typed judge output)
 meta.json (pass/fail, thresholds, timings, runner metadata)
 summary.md (human readable scores + issues/suggestions)
+
+For repeated runs (multi evaluation) you can programmatically gather all run artifacts and aggregated statistics (min/mean/median/max/stdev/variance) via `evaluate_case_multi` / `evaluate_case_multi_async`.
 
 ## Environment & Settings
 
@@ -192,7 +195,7 @@ export OPENAI_API_KEY="sk-..."
 ## Roadmap (abridged)
 
 v0.1 (current): core schemas, single judge, CLI, API, artifacts, basic tests.
-v0.2: multi-judge aggregation, runner artifact propagation.
+v0.2: multi-judge aggregation, runner artifact propagation, reproducibility (multi evaluation) support.
 Backlog: built-in runners (callable/http/cli/notebook), config file, export formats (CSV/JSONL/HTML), pytest plugin, MCP enhancements.
 
 ## Getting Involved

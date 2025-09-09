@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Model agnostic**: improved the agents module to support different models using PydanticAI.
+- **Judging**: Multi-judge aggregation (mean/median/majority), caching by case hash.
 
 ## v0.1.0 — MVP
 

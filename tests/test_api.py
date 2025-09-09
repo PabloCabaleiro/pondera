@@ -12,6 +12,7 @@ from pondera.models.evaluation import EvaluationResult
 from pondera.models.judgment import Judgment
 from pondera.models.run import RunResult
 from pondera.models.rubric import RubricCriterion
+from pondera.models.multi_evaluation import MultiEvaluationResult, AggregationMetric
 from pondera.runner.base import ProgressCallback
 
 
@@ -322,6 +323,96 @@ class TestEvaluateCaseAsync:
         assert isinstance(result, EvaluationResult)
         assert result.case_id == "test-case"
 
+    @pytest.mark.asyncio
+    async def test_evaluate_case_async_multi_repetitions(self, sample_case: CaseSpec) -> None:
+        """Test multi-run path returns MultiEvaluationResult with aggregates."""
+        multi_case = CaseSpec(
+            id=sample_case.id,
+            input=sample_case.input,
+            judge=sample_case.judge,
+            repetitions=3,
+        )
+
+        # Create judge with varying scores to test aggregation
+        scores = [70, 80, 90]
+
+        class VaryJudge(MockJudge):  # type: ignore
+            def __init__(self):
+                self.idx = 0
+
+            async def judge(self, **kwargs):  # type: ignore
+                sc = scores[self.idx]
+                self.idx += 1
+                return Judgment(
+                    score=sc,
+                    pass_fail=True,
+                    reasoning="ok",
+                    criteria_scores={"accuracy": sc, "clarity": sc - 5},
+                )
+
+        runner = MockRunner()
+        judge = VaryJudge()  # type: ignore
+        with (
+            patch("pondera.api.load_case_yaml", return_value=multi_case),
+            patch("pondera.api.get_settings"),
+            patch("pondera.api.apply_prejudge_checks", return_value=[]),
+            patch("pondera.api.choose_rubric", return_value=None),
+            patch("pondera.api.compute_pass", return_value=True),
+        ):
+            result = await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
+
+        assert isinstance(result, MultiEvaluationResult)
+        assert len(result.evaluations) == 3
+        overall_mean = result.aggregates.overall.mean
+        assert overall_mean == pytest.approx(sum(scores) / len(scores))
+        assert set(result.aggregates.per_criterion.keys()) == {"accuracy", "clarity"}
+
+    @pytest.mark.asyncio
+    async def test_evaluate_case_async_primary_metric_max(self, sample_case: CaseSpec) -> None:
+        """Primary metric selection affects pass outcome (max vs mean)."""
+        multi_case = CaseSpec(
+            id=sample_case.id,
+            input=sample_case.input,
+            judge=CaseJudge(overall_threshold=80),
+            repetitions=2,
+        )
+        scores = [60, 90]
+
+        class VaryJudge(MockJudge):  # type: ignore
+            def __init__(self):
+                self.idx = 0
+
+            async def judge(self, **kwargs):  # type: ignore
+                sc = scores[self.idx]
+                self.idx += 1
+                return Judgment(
+                    score=sc,
+                    pass_fail=True,
+                    reasoning="ok",
+                    criteria_scores={"accuracy": sc},
+                )
+
+        runner = MockRunner()
+        judge = VaryJudge()  # type: ignore
+        with (
+            patch("pondera.api.load_case_yaml", return_value=multi_case),
+            patch("pondera.api.get_settings"),
+            patch("pondera.api.apply_prejudge_checks", return_value=[]),
+            patch("pondera.api.choose_rubric", return_value=None),
+            patch("pondera.api.compute_pass", return_value=True),
+        ):
+            result = await evaluate_case_async(
+                "/fake/path.yaml",
+                runner=runner,
+                judge=judge,
+                primary_metric=AggregationMetric.max,
+            )
+
+        assert isinstance(result, MultiEvaluationResult)
+        assert result.passed_primary is True  # max=90 >= 80
+        # mean would be 75 (<80); ensure primary metric stored
+        assert result.primary_metric == AggregationMetric.max
+
 
 class TestEvaluateCase:
     """Test the synchronous evaluate_case function."""
@@ -386,6 +477,27 @@ class TestEvaluateCase:
 
         assert isinstance(result, EvaluationResult)
         assert result.case_id == "test-case"
+
+    def test_evaluate_case_multi_sync(self, sample_case: CaseSpec) -> None:
+        """Sync wrapper returns MultiEvaluationResult when repetitions>1."""
+        multi_case = CaseSpec(
+            id=sample_case.id,
+            input=sample_case.input,
+            judge=sample_case.judge,
+            repetitions=2,
+        )
+        runner = MockRunner()
+        judge = MockJudge()
+        with (
+            patch("pondera.api.load_case_yaml", return_value=multi_case),
+            patch("pondera.api.get_settings"),
+            patch("pondera.api.apply_prejudge_checks", return_value=[]),
+            patch("pondera.api.choose_rubric", return_value=None),
+            patch("pondera.api.compute_pass", return_value=True),
+        ):
+            result = evaluate_case("/fake/path.yaml", runner=runner, judge=judge)
+        assert isinstance(result, MultiEvaluationResult)
+        assert len(result.evaluations) == 2
 
 
 class TestApiIntegration:

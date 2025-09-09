@@ -71,3 +71,6 @@ class CaseSpec(BaseModel):
     expect: CaseExpectations = Field(default_factory=CaseExpectations)
     judge: CaseJudge = Field(default_factory=CaseJudge)
     timeout_s: int = Field(default=240, gt=0)
+    repetitions: int = Field(
+        default=1, ge=1, description="Number of repeated executions for reproducibility stats."
+    )

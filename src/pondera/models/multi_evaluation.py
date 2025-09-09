@@ -1,0 +1,59 @@
+from statistics import mean, median, pstdev, pvariance
+from pydantic import BaseModel, Field, ConfigDict
+from enum import Enum
+from typing import List, Dict
+from pondera.models.evaluation import EvaluationResult
+
+
+class AggregationMetric(str, Enum):
+    min = "min"
+    max = "max"
+    mean = "mean"
+    median = "median"
+
+
+class ScoreAggregate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    metric: AggregationMetric = Field(description="Primary aggregation metric requested.")
+    min: float
+    max: float
+    mean: float
+    median: float
+    stdev: float = Field(description="Population standard deviation (σ).")
+    variance: float = Field(description="Population variance (σ²).")
+
+
+def aggregate_numbers(values: List[float], metric: AggregationMetric) -> ScoreAggregate:
+    if not values:
+        raise ValueError("Cannot aggregate empty value list")
+    return ScoreAggregate(
+        metric=metric,
+        min=min(values),
+        max=max(values),
+        mean=mean(values),
+        median=median(values),
+        stdev=pstdev(values) if len(values) > 1 else 0.0,
+        variance=pvariance(values) if len(values) > 1 else 0.0,
+    )
+
+
+class CriteriaAggregates(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    overall: ScoreAggregate
+    per_criterion: Dict[str, ScoreAggregate]
+
+
+class MultiEvaluationResult(BaseModel):
+    """Result of executing the same case multiple times to measure reproducibility."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    case_id: str
+    evaluations: List[EvaluationResult] = Field(
+        description="Individual evaluation runs (length = repetitions)."
+    )
+    aggregates: CriteriaAggregates
+    passed_primary: bool = Field(
+        description="Pass/fail according to primary aggregation metric (overall)."
+    )
+    primary_metric: AggregationMetric
