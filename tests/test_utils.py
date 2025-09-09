@@ -5,7 +5,15 @@ from pathlib import Path
 
 import pytest
 
-from pondera.utils import load_case_yaml, apply_prejudge_checks, compute_pass, choose_rubric
+from pondera.utils import (
+    load_case_yaml,
+    apply_prejudge_checks,
+    compute_pass,
+    choose_rubric,
+    rubric_to_markdown,
+    default_rubric,
+    rubric_weight_note,
+)
 from pondera.models.case import CaseSpec, CaseInput, CaseJudge, CaseExpectations
 from pondera.models.rubric import RubricCriterion
 
@@ -597,3 +605,179 @@ judge:
             assert chosen_rubric == case.judge.rubric
             assert len(chosen_rubric) == 1
             assert chosen_rubric[0].name == "custom_criterion"
+
+
+class TestRubricToMarkdown:
+    """Test the rubric_to_markdown function."""
+
+    def test_single_criterion(self) -> None:
+        """Test markdown generation for a single criterion."""
+        rubric = [
+            RubricCriterion(name="accuracy", description="How accurate is the answer", weight=1.0)
+        ]
+
+        result = rubric_to_markdown(rubric)
+
+        assert result == "- **accuracy** (w=1): How accurate is the answer"
+
+    def test_multiple_criteria(self) -> None:
+        """Test markdown generation for multiple criteria."""
+        rubric = [
+            RubricCriterion(name="accuracy", description="How accurate is the answer", weight=0.6),
+            RubricCriterion(name="clarity", description="How clear is the explanation", weight=0.4),
+        ]
+
+        result = rubric_to_markdown(rubric)
+
+        expected = "- **accuracy** (w=0.6): How accurate is the answer\n- **clarity** (w=0.4): How clear is the explanation"
+        assert result == expected
+
+    def test_integer_weights(self) -> None:
+        """Test markdown generation with integer weights."""
+        rubric = [RubricCriterion(name="correctness", description="Facts are correct", weight=1)]
+
+        result = rubric_to_markdown(rubric)
+
+        assert result == "- **correctness** (w=1): Facts are correct"
+
+    def test_decimal_weights_formatting(self) -> None:
+        """Test that decimal weights are formatted properly."""
+        rubric = [RubricCriterion(name="test", description="test description", weight=0.33333)]
+
+        result = rubric_to_markdown(rubric)
+
+        assert "w=0.33333" in result
+
+    def test_empty_rubric(self) -> None:
+        """Test markdown generation for empty rubric."""
+        rubric: list[RubricCriterion] = []
+
+        result = rubric_to_markdown(rubric)
+
+        assert result == ""
+
+
+class TestDefaultRubric:
+    """Test the default_rubric function."""
+
+    def test_returns_list_of_criteria(self) -> None:
+        """Test that default rubric returns a list of criteria."""
+        rubric = default_rubric()
+
+        assert isinstance(rubric, list)
+        assert len(rubric) > 0
+        assert all(isinstance(c, RubricCriterion) for c in rubric)
+
+    def test_has_expected_criteria(self) -> None:
+        """Test that default rubric contains expected criteria."""
+        rubric = default_rubric()
+
+        names = [c.name for c in rubric]
+        expected_names = [
+            "correctness",
+            "completeness",
+            "methodology_repro",
+            "safety_compliance",
+            "presentation",
+        ]
+
+        assert set(names) == set(expected_names)
+
+    def test_weights_are_positive(self) -> None:
+        """Test that all weights in default rubric are positive."""
+        rubric = default_rubric()
+
+        for criterion in rubric:
+            assert criterion.weight > 0
+
+    def test_all_criteria_have_descriptions(self) -> None:
+        """Test that all criteria have non-empty descriptions."""
+        rubric = default_rubric()
+
+        for criterion in rubric:
+            assert criterion.description
+            assert len(criterion.description.strip()) > 0
+
+    def test_correctness_has_highest_weight(self) -> None:
+        """Test that correctness criterion has the highest weight."""
+        rubric = default_rubric()
+
+        correctness = next(c for c in rubric if c.name == "correctness")
+        other_weights = [c.weight for c in rubric if c.name != "correctness"]
+
+        assert all(correctness.weight >= w for w in other_weights)
+
+    def test_weights_sum_to_one(self) -> None:
+        """Test that weights sum to approximately 1.0."""
+        rubric = default_rubric()
+
+        total_weight = sum(c.weight for c in rubric)
+
+        # Allow for small floating point errors
+        assert abs(total_weight - 1.0) < 0.001
+
+
+class TestRubricWeightNote:
+    """Test the rubric_weight_note function."""
+
+    def test_normalized_weights(self) -> None:
+        """Test note for weights that sum to 1."""
+        rubric = [
+            RubricCriterion(name="a", description="test", weight=0.6),
+            RubricCriterion(name="b", description="test", weight=0.4),
+        ]
+
+        result = rubric_weight_note(rubric)
+
+        assert "total weight 1" in result
+        assert "normalize" in result.lower()
+
+    def test_non_normalized_weights(self) -> None:
+        """Test note for weights that don't sum to 1."""
+        rubric = [
+            RubricCriterion(name="a", description="test", weight=2.0),
+            RubricCriterion(name="b", description="test", weight=3.0),
+        ]
+
+        result = rubric_weight_note(rubric)
+
+        assert "total weight 5" in result
+        assert "normalize" in result.lower()
+
+    def test_single_criterion(self) -> None:
+        """Test note for single criterion."""
+        rubric = [RubricCriterion(name="only", description="test", weight=1.5)]
+
+        result = rubric_weight_note(rubric)
+
+        assert "total weight 1.5" in result
+
+    def test_very_small_weights(self) -> None:
+        """Test note for very small positive weights."""
+        rubric = [
+            RubricCriterion(name="a", description="test", weight=0.001),
+            RubricCriterion(name="b", description="test", weight=0.001),
+        ]
+
+        result = rubric_weight_note(rubric)
+
+        assert "total weight 0.002" in result
+
+    def test_empty_rubric(self) -> None:
+        """Test note for empty rubric."""
+        rubric: list[RubricCriterion] = []
+
+        result = rubric_weight_note(rubric)
+
+        assert "total weight 0" in result
+
+    def test_integer_weights(self) -> None:
+        """Test note formatting with integer weights."""
+        rubric = [
+            RubricCriterion(name="a", description="test", weight=1),
+            RubricCriterion(name="b", description="test", weight=2),
+        ]
+
+        result = rubric_weight_note(rubric)
+
+        assert "total weight 3" in result

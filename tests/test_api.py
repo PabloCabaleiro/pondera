@@ -301,7 +301,6 @@ class TestEvaluateCaseAsync:
         assert judge.last_call_args["answer_markdown"] == "Test answer"
         assert judge.last_call_args["judge_request"] == "Custom judge request"
         assert judge.last_call_args["rubric"] == sample_rubric
-        assert judge.last_call_args["model"] == "gpt-4"
         assert judge.last_call_args["system_append"] == "Be extra strict"
 
     @pytest.mark.asyncio

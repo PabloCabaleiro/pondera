@@ -57,7 +57,6 @@ async def evaluate_case_async(
         answer_markdown=run_res.answer_markdown or "",
         judge_request=case.judge.request,
         rubric=use_rubric,  # judge will fall back to its own default if None
-        model=case.judge.model,  # optional per-case model override
         system_append=case.judge.system_append,
     )
     t3 = time.perf_counter()

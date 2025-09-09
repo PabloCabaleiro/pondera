@@ -254,7 +254,7 @@ judge:
             # Mock all the dependencies before calling the function
             with (
                 patch("pondera.cli._load_runner") as mock_load_runner,
-                patch("pondera.cli.PydanticAIJudge") as mock_judge_cls,
+                patch("pondera.cli.Judge") as mock_judge_cls,
                 patch("pondera.cli.evaluate_case_async") as mock_evaluate,
                 patch("pondera.cli.write_case_artifacts") as mock_write,
                 patch("pondera.cli.get_settings") as mock_settings,
@@ -298,7 +298,7 @@ judge:
 
             with (
                 patch("pondera.cli._load_runner", return_value=MockRunner()),
-                patch("pondera.cli.PydanticAIJudge"),
+                patch("pondera.cli.Judge"),
                 patch("pondera.cli.evaluate_case_async", return_value=self.mock_evaluation_result),
                 patch("pondera.cli.write_case_artifacts"),
                 patch("pondera.cli.get_settings"),
@@ -324,7 +324,7 @@ judge:
         with tempfile.TemporaryDirectory() as tmpdir:
             with (
                 patch("pondera.cli._load_runner", return_value=MockRunner()),
-                patch("pondera.cli.PydanticAIJudge") as mock_judge,
+                patch("pondera.cli.Judge") as mock_judge,
                 patch("pondera.cli.evaluate_case_async", return_value=self.mock_evaluation_result),
                 patch("pondera.cli.write_case_artifacts"),
                 patch("pondera.cli.get_settings") as mock_settings,
@@ -355,7 +355,7 @@ judge:
 
             with (
                 patch("pondera.cli._load_runner", return_value=MockRunner()),
-                patch("pondera.cli.PydanticAIJudge", return_value=MockJudge()),
+                patch("pondera.cli.Judge", return_value=MockJudge()),
                 patch("pondera.cli.typer.echo") as mock_echo,
             ):
                 try:
@@ -395,7 +395,7 @@ judge:
         with tempfile.TemporaryDirectory() as tmpdir:
             with (
                 patch("pondera.cli._load_runner", return_value=MockRunner()),
-                patch("pondera.cli.PydanticAIJudge"),
+                patch("pondera.cli.Judge"),
                 patch("pondera.cli.evaluate_case_async", return_value=failed_result),
                 patch("pondera.cli.write_case_artifacts"),
                 patch("pondera.cli.get_settings") as mock_settings,
@@ -440,7 +440,7 @@ judge:
         with tempfile.TemporaryDirectory() as tmpdir:
             with (
                 patch("pondera.cli._load_runner", return_value=MockRunner()),
-                patch("pondera.cli.PydanticAIJudge"),
+                patch("pondera.cli.Judge"),
                 patch("pondera.cli.evaluate_case_async", return_value=failed_result),
                 patch("pondera.cli.write_case_artifacts"),
                 patch("pondera.cli.get_settings") as mock_settings,
@@ -472,7 +472,7 @@ judge:
         with tempfile.TemporaryDirectory() as tmpdir:
             with (
                 patch("pondera.cli._load_runner", return_value=MockRunner()),
-                patch("pondera.cli.PydanticAIJudge"),
+                patch("pondera.cli.Judge"),
                 patch(
                     "pondera.cli.evaluate_case_async", side_effect=Exception("Evaluation failed")
                 ),

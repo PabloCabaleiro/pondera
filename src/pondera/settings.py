@@ -47,6 +47,44 @@ class PonderaSettings(BaseSettings):
     azure_openai_endpoint: str | None = None
     azure_openai_deployment: str | None = None
 
+    # Model configuration
+    model_timeout: int = 120
+    model_family: str | None = None
+
+    # Azure models (additional fields)
+    azure_model_name: str | None = None
+    azure_openai_api_version: str | None = None
+
+    # OpenAI models (additional fields)
+    openai_model_name: str | None = None
+
+    # Ollama models
+    ollama_url: str | None = None
+    ollama_model_name: str | None = None
+
+    # OpenRouter models
+    openrouter_api_key: str | None = None
+    openrouter_api_url: str = "https://openrouter.ai/api/v1"
+    openrouter_model_name: str | None = None
+
+    # Embeddings
+    vdb_embeddings_model_family: str | None = None
+    openai_vdb_embeddings_model_name: str | None = None
+    azure_vdb_embeddings_model_name: str | None = None
+    ollama_vdb_embeddings_model_name: str | None = None
+
+    # Bedrock models
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
+    aws_session_token: str | None = None
+    aws_region: str = "us-east-1"
+    aws_profile: str | None = None
+    bedrock_model_name: str | None = None
+
+    # LogFire
+    logfire_token: str = ""
+    logfire_traces_endpoint: str = ""
+
     # Space for future providers; keep names intuitive and documented.
     extra: dict[str, Any] = Field(default_factory=dict)
 
@@ -55,6 +93,10 @@ def _set_if_missing(name: str, value: str | None) -> None:
     if value is None:
         return
     os.environ.setdefault(name, value)
+
+
+def _set_if_missing_int(name: str, value: int) -> None:
+    os.environ.setdefault(name, str(value))
 
 
 def apply_to_environment(settings: PonderaSettings) -> None:
@@ -81,6 +123,44 @@ def apply_to_environment(settings: PonderaSettings) -> None:
     _set_if_missing("AZURE_OPENAI_API_KEY", settings.azure_openai_api_key)
     _set_if_missing("AZURE_OPENAI_ENDPOINT", settings.azure_openai_endpoint)
     _set_if_missing("AZURE_OPENAI_DEPLOYMENT", settings.azure_openai_deployment)
+
+    # Additional model configuration
+    _set_if_missing_int("MODEL_TIMEOUT", settings.model_timeout)
+    _set_if_missing("MODEL_FAMILY", settings.model_family)
+
+    # Azure models (additional)
+    _set_if_missing("AZURE_MODEL_NAME", settings.azure_model_name)
+    _set_if_missing("AZURE_OPENAI_API_VERSION", settings.azure_openai_api_version)
+
+    # OpenAI models (additional)
+    _set_if_missing("OPENAI_MODEL_NAME", settings.openai_model_name)
+
+    # Ollama models
+    _set_if_missing("OLLAMA_URL", settings.ollama_url)
+    _set_if_missing("OLLAMA_MODEL_NAME", settings.ollama_model_name)
+
+    # OpenRouter models
+    _set_if_missing("OPENROUTER_API_KEY", settings.openrouter_api_key)
+    _set_if_missing("OPENROUTER_API_URL", settings.openrouter_api_url)
+    _set_if_missing("OPENROUTER_MODEL_NAME", settings.openrouter_model_name)
+
+    # Embeddings
+    _set_if_missing("VDB_EMBEDDINGS_MODEL_FAMILY", settings.vdb_embeddings_model_family)
+    _set_if_missing("OPENAI_VDB_EMBEDDINGS_MODEL_NAME", settings.openai_vdb_embeddings_model_name)
+    _set_if_missing("AZURE_VDB_EMBEDDINGS_MODEL_NAME", settings.azure_vdb_embeddings_model_name)
+    _set_if_missing("OLLAMA_VDB_EMBEDDINGS_MODEL_NAME", settings.ollama_vdb_embeddings_model_name)
+
+    # Bedrock models
+    _set_if_missing("AWS_ACCESS_KEY_ID", settings.aws_access_key_id)
+    _set_if_missing("AWS_SECRET_ACCESS_KEY", settings.aws_secret_access_key)
+    _set_if_missing("AWS_SESSION_TOKEN", settings.aws_session_token)
+    _set_if_missing("AWS_REGION", settings.aws_region)
+    _set_if_missing("AWS_PROFILE", settings.aws_profile)
+    _set_if_missing("BEDROCK_MODEL_NAME", settings.bedrock_model_name)
+
+    # LogFire
+    _set_if_missing("LOGFIRE_TOKEN", settings.logfire_token)
+    _set_if_missing("LOGFIRE_TRACES_ENDPOINT", settings.logfire_traces_endpoint)
 
 
 @lru_cache(maxsize=1)

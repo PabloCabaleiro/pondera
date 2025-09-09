@@ -4,12 +4,7 @@ Pondera is a lightweight, YAML-first framework to evaluate AI models and agents 
 
 ## Why Pondera?
 
-- **YAML as single source of truth** – All test inputs & expectations live in YAML files (decoupled from code).
-- **Model-agnostic** – Evaluate Python callables, HTTP services, or anything else via runners.
-- **Typed judging** – LLM judge returns a strict Judgment schema (Pydantic).
-- **MCP-ready judge** – Optional MCP tools/resources available to the judge (configurable & allow-listed).
-- **Portable** – Use the CLI, a tiny Python API, or a pytest helper (pytest is optional).
-- **Reproducible** – Standard artifacts (answer.md, judgment.json, summary.md, meta.json) per case.
+YAML single source of truth for inputs & expectations. Model/provider agnostic: you supply a runner (any callable that can produce markdown). Judge returns a strict JSON schema (Judgment) with weighted rubric scoring. Portable via CLI or small Python API. Reproducible artifacts per case (answer, judgment, summary, meta). Minimal defaults; you can override rubric per case.
 
 ## Core Concepts
 
@@ -116,20 +111,65 @@ res = evaluate_case("eval/cases/hello.yaml", runner=DemoRunner(), judge=Pydantic
 print(res.passed, res.judgment.score)
 ```
 
-### 3. Pytest helper
+### 3. Testing (pytest)
 
 ```python
-from pondera.pytest_helpers import load_cases, run_case
-from pondera.judge.pydantic_ai import PydanticAIJudge
+from pondera.api import evaluate_case
+from pondera.judge.pydantic_ai import LlmJudge
 
-CASES = load_cases("eval/cases")
-
-def test_cases():
-    judge = PydanticAIJudge()
-    for case in CASES:
-        res = run_case(case, runner=DemoRunner(), judge=judge)
-        assert res.passed
+def test_hello_case():
+  class DemoRunner:
+    async def run(self, *, question, attachments=None, params=None, progress=None):
+      return {"answer_markdown": f"Answer: {question}"}
+  res = evaluate_case("eval/cases/hello.yaml", runner=DemoRunner(), judge=PydanticAIJudge())
+  assert res.passed
 ```
+
+See `docs/TESTING.md` for markers and commands.
+
+## Quickstart
+
+1. Install: `uv add pondera`
+2. Create a case YAML (e.g. `eval/cases/hello.yaml`)
+3. Write a small runner class or factory with an async `run` returning `answer_markdown`
+4. Run: `pondera run eval/cases --runner mypkg.runner_factory:make_runner --artifacts eval/artifacts`
+5. Inspect artifacts under `eval/artifacts/<case_id>/`
+
+## YAML Schema (concise)
+
+Required top-level fields: `id`, `input.query`.
+Input: `query: str`, optional `attachments: [paths]`, `params: {free-form}`.
+Expect (all optional lists): `must_contain`, `must_not_contain`, `regex_must_match`.
+Judge: `request` (instructions for judge), `overall_threshold` (default 70), `per_criterion_thresholds` (dict), optional `rubric` (list of {name, weight, description}), `model` (override), `system_append` (extra system guidance).
+Timeout: `timeout_s` (default 240).
+
+## Artifacts
+
+Per case directory (slugified id):
+answer.md (raw markdown answer)
+judgment.json (typed judge output)
+meta.json (pass/fail, thresholds, timings, runner metadata)
+summary.md (human readable scores + issues/suggestions)
+
+## Environment & Settings
+
+Settings model: `pondera.settings.PonderaSettings` (env prefix `PONDERA_`, `.env` supported). Key fields:
+PONDERA_ARTIFACTS_DIR (default eval/artifacts)
+PONDERA_TIMEOUT_DEFAULT_S (default 240)
+PONDERA_JUDGE_MODEL (planned default identifier; current judge path uses provider family vars below)
+Model provider selection uses generic fields: set `PONDERA_MODEL_FAMILY` and the corresponding model name + API key, e.g. for OpenAI:
+
+```bash
+export PONDERA_MODEL_FAMILY=openai
+export OPENAI_API_KEY=sk-...
+export PONDERA_OPENAI_MODEL_NAME=gpt-4o-mini
+```
+
+Similar patterns: anthropic (ANTHROPIC_API_KEY, PONDERA_MODEL_FAMILY=anthropic), azure (AZURE_OPENAI_* plus PONDERA_MODEL_FAMILY=azure), etc.
+
+## Limitations / Notes
+
+Single judge only (no aggregation). Built-in generic runners not yet included (write a tiny custom runner). Pytest helper from earlier roadmap not yet implemented. Multi-judge, runner templates, export formats are roadmap items.
 
 ## Settings
 
@@ -149,34 +189,12 @@ export PONDERA_JUDGE_MODEL="openai:gpt-4o-mini"
 export OPENAI_API_KEY="sk-..."
 ```
 
-## Roadmap
+## Roadmap (abridged)
 
-### v0.1 — MVP
-
-- [x] **Schemas**: `CaseSpec`, `RubricCriterion`/`Rubric`, `RunResult`, `Judgment`.
-- [x] **Judge**: `PydanticAIJudge` (typed JSON result, model-agnostic).
-- [x] **API**: `evaluate_case(...)` (sync wrapper calling async core).
-- [x] **CLI**: `pondera run <cases_dir> --runner ... --artifacts ....`
-- [x] **Pytest helper**: `load_cases()`, `run_case()`; sample test file using parametrize.
-- [x] **Artifacts**: `answer.md`, `judgment.json`, `summary.md`, `meta.json`.
-- [x] **Docs**: README, YAML schema reference, quickstart examples.
-- [x] **Tests**: Adding basic tests.
-
-### v0.2
-
-- [ ] **Judging**: Multi-judge aggregation (mean/median/majority), caching by case hash.
-- [ ] **Propagating artifacts**: Propagating runner artifacts to the Judge.
-
-### Backlog
-
-- [ ] **Built-in Runners**: `PythonCallableRunner`, `HTTPRunner`, `CLIRunner`, `NotebookRunner` (Jupyter/nbclient)...
-- [ ] **MCP (judge-side)**: config pass-through.
-- [ ] **Config**: Project-level defaults (pondera.yaml), env/secret injection.
-- [ ] **Exports**: CSV/JSONL summaries for dashboards; simple HTML report.
-- [ ] **Pytest plugin** (auto-collect YAML cases via flags).
+v0.1 (current): core schemas, single judge, CLI, API, artifacts, basic tests.
+v0.2: multi-judge aggregation, runner artifact propagation.
+Backlog: built-in runners (callable/http/cli/notebook), config file, export formats (CSV/JSONL/HTML), pytest plugin, MCP enhancements.
 
 ## Getting Involved
 
-- **Issues / Ideas**: Propose runner/judge adapters, schema tweaks, or MCP use-cases.
-- **Contributions**: PRs welcome once the v0.1 schema stabilizes (tests + docs).
-- **License**: MIT (proposed; confirm before first release).
+Open issues for runner/judge adapters, schema refinements, or export needs. PRs welcome (keep changes small and tested). License: MIT.

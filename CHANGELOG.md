@@ -1,0 +1,23 @@
+# Pondera Changelog
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## WIP
+
+### Added
+
+- **Model agnostic**: improved the agents module to support different models using PydanticAI.
+
+## v0.1.0 — MVP
+
+### Added
+
+- **Schemas**: `CaseSpec`, `RubricCriterion`/`Rubric`, `RunResult`, `Judgment`.
+- **Judge**: `PydanticAIJudge` (typed JSON result, model-agnostic).
+- **API**: `evaluate_case(...)` (sync wrapper calling async core).
+- **CLI**: `pondera run <cases_dir> --runner ... --artifacts ....`
+- **Pytest helper**: `load_cases()`, `run_case()`; sample test file using parametrize.
+- **Artifacts**: `answer.md`, `judgment.json`, `summary.md`, `meta.json`.
+- **Docs**: README, YAML schema reference, quickstart examples.
+- **Tests**: Adding basic tests.
