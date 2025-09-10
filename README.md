@@ -4,7 +4,11 @@ Lightweight, YAML‑first evaluation for AI models and agents. You write cases i
 
 ## Why Pondera?
 
-Single source of truth (YAML). Any model/provider (you control inference). Strict JSON judgment schema with weighted rubric scoring. Simple Python API (CLI removed). Reproducible artifacts (answer, judgment, summary, meta). Per‑case rubric overrides.
+- Single source of truth (YAML).
+- Any model/provider (you control inference).
+- Strict JSON judgment schema with weighted rubric scoring.
+- Simple Python API (CLI removed).
+- Reproducible artifacts (answer, judgment, summary, meta). Per‑case rubric overrides.
 
 ## Core Concepts
 
@@ -95,9 +99,9 @@ class ConstantJudge(JudgeProtocol):
 
 ```bash
 # Using uv (recommended)
-uv add pondera
+uv add 'git+ssh://git@github.com/PabloCabaleiro/pondera.git@v0.3.0'
 # or from source in editable mode
-uv pip install -e .
+uv pip install 'git+ssh://git@github.com/PabloCabaleiro/pondera.git@v0.3.0'
 ```
 
 The judge uses the pydantic-ai ecosystem. Configure provider credentials via env vars (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `AZURE_OPENAI_API_KEY`, etc.) plus optional `PONDERA_` settings.
