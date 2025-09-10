@@ -3,6 +3,16 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## WIP
+
+- [ ] Remove duplicate settings, e.g: `judge_model`, `default_model`
+- [ ] Add Protocol to class Judge in case someone wants to override it.
+- [ ] Improve results message.
+- [ ] Update readme.
+- [ ] Removing cli for now.
+- [ ] Fixing artfacts report for api.
+
+
 ## v0.1.0
 
 ### Added
