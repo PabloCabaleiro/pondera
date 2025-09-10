@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+import logging
 
 from pondera.models.evaluation import EvaluationResult
+from pondera.models.multi_evaluation import MultiEvaluationResult
 
 
 def _slug(s: str) -> str:
@@ -89,7 +91,65 @@ def write_case_artifacts(artifacts_root: Path | str, res: EvaluationResult) -> P
         json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8"
     )
 
-    # summary.md (human friendly)
-    (case_dir / "summary.md").write_text(_summary_md(res), encoding="utf-8")
+    # summary.md (human friendly) + log to stdout via logger
+    summary_text = _summary_md(res)
+    (case_dir / "summary.md").write_text(summary_text, encoding="utf-8")
+    logging.getLogger("pondera.artifacts").info("\n" + summary_text.rstrip())
 
     return case_dir
+
+
+def write_multi_evaluation_artifacts(
+    artifacts_root: Path | str, res: MultiEvaluationResult
+) -> Path:
+    """Write artifacts for a multi-evaluation result.
+
+    Layout:
+      <root>/<case-slug>/multi/
+        summary.md               (aggregate human readable)
+        aggregates.json          (raw aggregates + pass + primary metric)
+        evaluations/<idx>/...    (each repetition, reuse write_case_artifacts)
+    """
+    root = Path(artifacts_root)
+    base = root / _slug(res.case_id) / "multi"
+    evals_dir = base / "evaluations"
+    evals_dir.mkdir(parents=True, exist_ok=True)
+
+    # Per evaluation artifacts (numbered for reproducibility, preserve order)
+    for idx, ev in enumerate(res.evaluations, start=1):
+        write_case_artifacts(evals_dir / f"{idx:03d}", ev)
+
+    # Aggregates json
+    aggregates_payload = {
+        "case_id": res.case_id,
+        "passed": res.passed,
+        "primary_metric": res.primary_metric.value,
+        "overall": res.aggregates.overall.model_dump(),
+        "per_criterion": {k: v.model_dump() for k, v in res.aggregates.per_criterion.items()},
+    }
+    (base / "aggregates.json").write_text(
+        json.dumps(aggregates_payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
+    # Human summary
+    lines: list[str] = []
+    lines.append(f"# Multi Evaluation: {res.case_id}")
+    lines.append("")
+    lines.append(f"- **Repetitions**: {len(res.evaluations)}")
+    lines.append(f"- **Primary metric**: {res.primary_metric.value}")
+    lines.append(f"- **Passed**: {'✅' if res.passed else '❌'}")
+    ov = res.aggregates.overall
+    lines.append(
+        f"- **Overall**: min={ov.min}, max={ov.max}, mean={ov.mean}, median={ov.median}, stdev={ov.stdev}, variance={ov.variance}"
+    )
+    if res.aggregates.per_criterion:
+        lines.append("\n## Per-criterion aggregates")
+        for k, agg in sorted(res.aggregates.per_criterion.items()):
+            lines.append(
+                f"- **{k}**: min={agg.min}, max={agg.max}, mean={agg.mean}, median={agg.median}, stdev={agg.stdev}, variance={agg.variance}"
+            )
+    multi_summary = "\n".join(lines) + "\n"
+    (base / "summary.md").write_text(multi_summary, encoding="utf-8")
+    logging.getLogger("pondera.artifacts").info("\n" + multi_summary.rstrip())
+
+    return base

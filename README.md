@@ -100,11 +100,21 @@ uv add pondera
 uv pip install -e .
 ```
 
-The judge uses the pydantic-ai ecosystem. Configure provider credentials via env vars (OPENAI_API_KEY, ANTHROPIC_API_KEY, AZURE_OPENAI_API_KEY, etc.) plus optional `PONDERA_` settings.
+The judge uses the pydantic-ai ecosystem. Configure provider credentials via env vars (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `AZURE_OPENAI_API_KEY`, etc.) plus optional `PONDERA_` settings.
 
 ## Usage
 
 ### Python API
+
+
+`evaluate_case_async` is the real coroutine that performs the evaluation (single or multi‑repetition). Use it inside async code (`await evaluate_case_async(...)`).
+
+`evaluate_case` is a thin convenience wrapper for synchronous contexts: it calls `asyncio.run` on `evaluate_case_async` and raises if an event loop is already running (to prevent nested loop issues). Choose:
+
+- If you are already inside `async def` (e.g. in an async runner, web service, notebook with an active loop) use `await evaluate_case_async(...)`.
+- If you are writing a plain script or test function that is not async, call `evaluate_case(...)` directly.
+
+Both return the same dataclasses (`EvaluationResult` or `MultiEvaluationResult`) and accept the same parameters (the sync wrapper simply forwards them).
 
 ```python
 from pondera.api import evaluate_case
@@ -217,6 +227,8 @@ Guidance: set `MODEL_FAMILY`, supply the matching provider credentials + model n
 ## Limitations
 
 - Artifacts from the runners are just read as plain text and the content provided to the judge up to 20 KB per file.
+- No pypi package yet.
+- No CI/CD.
 
 ## Contributing
 

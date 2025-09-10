@@ -17,6 +17,8 @@ from pondera.models.multi_evaluation import (
 from pondera.models.case import CaseSpec
 from pondera.settings import get_settings
 from pondera.utils import load_case_yaml, apply_prejudge_checks, compute_pass, choose_rubric
+from pondera.io.artifacts import write_case_artifacts
+from pondera.io.artifacts import write_multi_evaluation_artifacts  # type: ignore
 
 
 async def _execute_case_once(
@@ -62,6 +64,7 @@ async def evaluate_case_async(
     default_rubric: list[RubricCriterion] | None = None,
     progress: ProgressCallback | None = None,
     primary_metric: AggregationMetric = AggregationMetric.mean,
+    artifacts_root: Path | str | None = None,
 ) -> EvaluationResult | MultiEvaluationResult:
     """Evaluate a case (optionally multiple repetitions) and return results.
 
@@ -74,24 +77,30 @@ async def evaluate_case_async(
     case = load_case_yaml(case_yaml_path)
     reps = max(1, getattr(case, "repetitions", 1))
     if reps == 1:
-        return await _execute_case_once(
+        single = await _execute_case_once(
             case=case,
             runner=runner,
             judge=judge,
             default_rubric=default_rubric,
             progress=progress,
         )
+        if artifacts_root:
+            write_case_artifacts(artifacts_root, single)
+        return single
     evaluations = await _run_multiple_evaluations(
         case, reps, runner, judge, default_rubric, progress
     )
     aggregates, passed_primary = _aggregate_multi_evaluations(evaluations, primary_metric)
-    return MultiEvaluationResult(
+    multi = MultiEvaluationResult(
         case_id=case.id,
         evaluations=evaluations,
         aggregates=aggregates,
         passed=passed_primary,
         primary_metric=primary_metric,
     )
+    if artifacts_root:
+        write_multi_evaluation_artifacts(artifacts_root, multi)
+    return multi
 
 
 def _run_case(case: "CaseSpec", runner: Runner, progress: ProgressCallback | None) -> Any:
@@ -194,6 +203,7 @@ def evaluate_case(
     default_rubric: list[RubricCriterion] | None = None,
     progress: ProgressCallback | None = None,
     primary_metric: AggregationMetric = AggregationMetric.mean,
+    artifacts_root: Path | str | None = None,
 ) -> EvaluationResult | MultiEvaluationResult:
     """Sync wrapper around `evaluate_case_async` supporting repetitions (see async docstring)."""
     try:
@@ -212,5 +222,6 @@ def evaluate_case(
             default_rubric=default_rubric,
             progress=progress,
             primary_metric=primary_metric,
+            artifacts_root=artifacts_root,
         )
     )
