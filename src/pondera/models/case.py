@@ -50,7 +50,6 @@ class CaseJudge(BaseModel):
     overall_threshold: int = Field(default=70, ge=0, le=100)
     per_criterion_thresholds: dict[str, int] = Field(default_factory=dict)
     rubric: list[RubricCriterion] | None = None  # overrides project default rubric
-    model: str | None = None  # judge model override, e.g. "openai:gpt-4o-mini"
     system_append: str = Field(default="")  # extra system guidance for the judge
 
 

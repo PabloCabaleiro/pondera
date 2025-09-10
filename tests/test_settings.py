@@ -47,8 +47,6 @@ class TestPonderaSettings:
 
                 assert settings.log_level == "INFO"
                 assert settings.artifacts_dir == "eval/artifacts"
-                assert settings.timeout_default_s == 240
-                assert settings.judge_model == "openai:gpt-4o-mini"
                 assert settings.openai_api_key is None
                 assert settings.openai_base_url is None
                 assert settings.openai_organization is None
@@ -91,10 +89,6 @@ class TestPonderaSettings:
                 assert settings.aws_profile is None
                 assert settings.bedrock_model_name is None
 
-                # LogFire fields
-                assert settings.logfire_token == ""
-                assert settings.logfire_traces_endpoint == ""
-
                 assert settings.extra == {}
             finally:
                 os.chdir(original_cwd)
@@ -110,7 +104,6 @@ class TestPonderaSettings:
                 "PONDERA_LOG_LEVEL": "DEBUG",
                 "PONDERA_ARTIFACTS_DIR": "/custom/artifacts",
                 "PONDERA_TIMEOUT_DEFAULT_S": "300",
-                "PONDERA_JUDGE_MODEL": "anthropic:claude-3-sonnet",
             },
             clear=False,
         ):
@@ -118,8 +111,6 @@ class TestPonderaSettings:
 
             assert settings.log_level == "DEBUG"
             assert settings.artifacts_dir == "/custom/artifacts"
-            assert settings.timeout_default_s == 300
-            assert settings.judge_model == "anthropic:claude-3-sonnet"
 
     def test_provider_credentials_from_env(self) -> None:
         """Test that provider credentials are loaded from environment."""
@@ -171,8 +162,6 @@ class TestPonderaSettings:
                 "PONDERA_AWS_REGION": "us-west-2",
                 "PONDERA_AWS_PROFILE": "test-profile",
                 "PONDERA_BEDROCK_MODEL_NAME": "anthropic.claude-3-sonnet-20240229-v1:0",
-                "PONDERA_LOGFIRE_TOKEN": "test-logfire-token",
-                "PONDERA_LOGFIRE_TRACES_ENDPOINT": "https://logfire.pydantic.dev",
             },
             clear=False,
         ):
@@ -198,8 +187,6 @@ class TestPonderaSettings:
             assert settings.aws_region == "us-west-2"
             assert settings.aws_profile == "test-profile"
             assert settings.bedrock_model_name == "anthropic.claude-3-sonnet-20240229-v1:0"
-            assert settings.logfire_token == "test-logfire-token"
-            assert settings.logfire_traces_endpoint == "https://logfire.pydantic.dev"
 
     def test_env_file_loading(self) -> None:
         """Test that settings are loaded from .env file."""
@@ -208,7 +195,6 @@ class TestPonderaSettings:
             env_file.write_text("""
 PONDERA_LOG_LEVEL=DEBUG
 PONDERA_ARTIFACTS_DIR=/tmp/artifacts
-PONDERA_JUDGE_MODEL=openai:gpt-4
 PONDERA_OPENAI_API_KEY=sk-from-file
 """)
 
@@ -219,7 +205,6 @@ PONDERA_OPENAI_API_KEY=sk-from-file
             env_vars_to_clear = [
                 "PONDERA_LOG_LEVEL",
                 "PONDERA_ARTIFACTS_DIR",
-                "PONDERA_JUDGE_MODEL",
                 "PONDERA_OPENAI_API_KEY",
             ]
 
@@ -235,7 +220,6 @@ PONDERA_OPENAI_API_KEY=sk-from-file
 
                 assert settings.log_level == "DEBUG"
                 assert settings.artifacts_dir == "/tmp/artifacts"
-                assert settings.judge_model == "openai:gpt-4"
                 assert settings.openai_api_key == "sk-from-file"
             finally:
                 os.chdir(original_cwd)
@@ -353,7 +337,6 @@ class TestApplyToEnvironment:
     def test_exports_all_provider_settings(self) -> None:
         """Test that all provider settings are exported to environment."""
         settings = PonderaSettings(
-            judge_model="custom:model",
             openai_api_key="sk-openai",
             openai_base_url="https://custom.api.com",
             openai_organization="org-custom",
@@ -387,7 +370,6 @@ class TestApplyToEnvironment:
 
         # Clear relevant environment variables
         env_vars_to_clear = [
-            "PONDERA_JUDGE_MODEL",
             "OPENAI_API_KEY",
             "OPENAI_BASE_URL",
             "OPENAI_ORG",
@@ -427,7 +409,6 @@ class TestApplyToEnvironment:
         try:
             apply_to_environment(settings)
 
-            assert os.environ["PONDERA_JUDGE_MODEL"] == "custom:model"
             assert os.environ["OPENAI_API_KEY"] == "sk-openai"
             assert os.environ["OPENAI_BASE_URL"] == "https://custom.api.com"
             assert os.environ["OPENAI_ORG"] == "org-custom"
@@ -458,8 +439,6 @@ class TestApplyToEnvironment:
             assert os.environ["AWS_REGION"] == "us-west-2"
             assert os.environ["AWS_PROFILE"] == "test-profile"
             assert os.environ["BEDROCK_MODEL_NAME"] == "anthropic.claude-3-sonnet-20240229-v1:0"
-            assert os.environ["LOGFIRE_TOKEN"] == "test-logfire-token"
-            assert os.environ["LOGFIRE_TRACES_ENDPOINT"] == "https://logfire.pydantic.dev"
         finally:
             # Clean up
             for var in env_vars_to_clear:
@@ -560,13 +539,12 @@ class TestGetSettings:
 
         with patch.dict(
             os.environ,
-            {"PONDERA_LOG_LEVEL": "DEBUG", "PONDERA_JUDGE_MODEL": "custom:model"},
+            {"PONDERA_LOG_LEVEL": "DEBUG"},
             clear=False,
         ):
             settings = get_settings()
 
             assert settings.log_level == "DEBUG"
-            assert settings.judge_model == "custom:model"
 
 
 class TestReloadSettings:
@@ -616,13 +594,12 @@ class TestIntegration:
             {
                 "PONDERA_LOG_LEVEL": "DEBUG",
                 "PONDERA_ARTIFACTS_DIR": "/test/artifacts",
-                "PONDERA_JUDGE_MODEL": "openai:gpt-4",
                 "PONDERA_OPENAI_API_KEY": "sk-test-key",
             },
             clear=False,
         ):
             # Clear any existing provider env vars
-            provider_vars = ["OPENAI_API_KEY", "PONDERA_JUDGE_MODEL"]
+            provider_vars = ["OPENAI_API_KEY"]
             for var in provider_vars:
                 if var in os.environ and not var.startswith("PONDERA_"):
                     del os.environ[var]
@@ -633,12 +610,10 @@ class TestIntegration:
                 # Verify settings loaded correctly
                 assert settings.log_level == "DEBUG"
                 assert settings.artifacts_dir == "/test/artifacts"
-                assert settings.judge_model == "openai:gpt-4"
                 assert settings.openai_api_key == "sk-test-key"
 
                 # Verify environment was populated
                 assert os.environ["OPENAI_API_KEY"] == "sk-test-key"
-                assert os.environ["PONDERA_JUDGE_MODEL"] == "openai:gpt-4"
             finally:
                 # Clean up
                 for var in provider_vars:
@@ -649,7 +624,7 @@ class TestIntegration:
         """Test loading from .env file and exporting to environment."""
         with tempfile.TemporaryDirectory() as tmpdir:
             env_file = Path(tmpdir) / ".env"
-            env_file.write_text("""PONDERA_JUDGE_MODEL=anthropic:claude-3-sonnet
+            env_file.write_text("""
 PONDERA_ANTHROPIC_API_KEY=sk-test-anthropic
 PONDERA_TIMEOUT_DEFAULT_S=180
 """)
@@ -658,7 +633,6 @@ PONDERA_TIMEOUT_DEFAULT_S=180
             # Also clear any conflicting env vars
             env_backup = {}
             env_vars_to_clear = [
-                "PONDERA_JUDGE_MODEL",
                 "PONDERA_ANTHROPIC_API_KEY",
                 "PONDERA_TIMEOUT_DEFAULT_S",
                 "ANTHROPIC_API_KEY",
@@ -678,9 +652,7 @@ PONDERA_TIMEOUT_DEFAULT_S=180
                 apply_to_environment(settings)
 
                 # Verify settings from .env file
-                assert settings.judge_model == "anthropic:claude-3-sonnet"
                 assert settings.anthropic_api_key == "sk-test-anthropic"
-                assert settings.timeout_default_s == 180
 
                 # Verify environment was populated
                 assert os.environ["ANTHROPIC_API_KEY"] == "sk-test-anthropic"

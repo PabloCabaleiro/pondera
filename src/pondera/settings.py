@@ -14,7 +14,7 @@ class PonderaSettings(BaseSettings):
     Centralized configuration for Pondera.
 
     Convention:
-      - All Pondera-specific vars use the PONDERA_ prefix (e.g., PONDERA_JUDGE_MODEL).
+      - All Pondera-specific vars use the PONDERA_ prefix.
       - We mirror common provider envs (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.) by
         exporting them via `apply_to_environment()` so provider SDKs and pydantic_ai
         discover them without each runner/judge touching env directly.
@@ -29,12 +29,6 @@ class PonderaSettings(BaseSettings):
     # General
     log_level: str = "INFO"
     artifacts_dir: str = "eval/artifacts"
-    timeout_default_s: int = 240
-
-    # Judge defaults
-    judge_model: str = Field(
-        default="openai:gpt-4o-mini", description="Default model id for the judge"
-    )
 
     # Provider creds / endpoints (optional; export to generic envs for SDKs)
     openai_api_key: str | None = None
@@ -81,10 +75,6 @@ class PonderaSettings(BaseSettings):
     aws_profile: str | None = None
     bedrock_model_name: str | None = None
 
-    # LogFire
-    logfire_token: str = ""
-    logfire_traces_endpoint: str = ""
-
     # Space for future providers; keep names intuitive and documented.
     extra: dict[str, Any] = Field(default_factory=dict)
 
@@ -106,8 +96,6 @@ def apply_to_environment(settings: PonderaSettings) -> None:
 
     We set only if the env var is not already present (user wins).
     """
-    # Judge default model (for components that check it)
-    _set_if_missing("PONDERA_JUDGE_MODEL", settings.judge_model)
 
     # OpenAI
     _set_if_missing("OPENAI_API_KEY", settings.openai_api_key)
@@ -157,10 +145,6 @@ def apply_to_environment(settings: PonderaSettings) -> None:
     _set_if_missing("AWS_REGION", settings.aws_region)
     _set_if_missing("AWS_PROFILE", settings.aws_profile)
     _set_if_missing("BEDROCK_MODEL_NAME", settings.bedrock_model_name)
-
-    # LogFire
-    _set_if_missing("LOGFIRE_TOKEN", settings.logfire_token)
-    _set_if_missing("LOGFIRE_TRACES_ENDPOINT", settings.logfire_traces_endpoint)
 
 
 @lru_cache(maxsize=1)

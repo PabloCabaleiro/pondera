@@ -3,21 +3,21 @@ from pathlib import Path
 
 from pondera.models.rubric import RubricCriterion
 from pondera.models.judgment import Judgment
-from pondera.settings import get_settings
 from pondera.utils import rubric_to_markdown, rubric_weight_note, default_rubric
 from pondera.judge.pydantic_ai import get_agent, run_agent
+from pondera.judge.protocol import JudgeProtocol
 
 
 class JudgeError(RuntimeError):
     """Raised for judge configuration or runtime errors."""
 
 
-class Judge:
+class Judge(JudgeProtocol):
     """
     LLM-as-a-judge built on get_agent and run_agent, returning a strict `Judgment`.
 
     - Model-agnostic: pass any backend id supported by your pydantic_ai setup.
-    - Defaults are pulled from Pondera settings (PONDERA_JUDGE_MODEL, provider envs).
+    - Defaults are pulled from Pondera settings.
     - No MCP in MVP (can be added later).
     """
 
@@ -28,8 +28,6 @@ class Judge:
         rubric: list[RubricCriterion] | None = None,
         system_append: str = "",
     ):
-        settings = get_settings()
-        self._default_model = model or settings.judge_model
         self._default_rubric = rubric or default_rubric()
         self._system_append = system_append
 

@@ -79,7 +79,6 @@ class MockJudge:
             "files": files,
             "judge_request": judge_request,
             "rubric": rubric,
-            "model": model,
             "system_append": system_append,
         }
 
@@ -104,7 +103,6 @@ def sample_case() -> CaseSpec:
             rubric=None,
             overall_threshold=7.0,
             per_criterion_thresholds={},  # Empty dict instead of None
-            model=None,
             system_append="",  # Empty string instead of None
         ),
     )
@@ -253,7 +251,6 @@ class TestEvaluateCaseAsync:
                 rubric=None,
                 overall_threshold=8.0,
                 per_criterion_thresholds={"accuracy": 9.0},
-                model="gpt-4",
                 system_append="Be extra strict",
             ),
         )
@@ -370,7 +367,7 @@ class TestEvaluateCaseAsync:
                 primary_metric=AggregationMetric.max,
             )
         assert isinstance(result, MultiEvaluationResult)
-        assert result.passed_primary is True
+        assert result.passed is True
         assert result.primary_metric == AggregationMetric.max
 
 
@@ -395,6 +392,35 @@ class TestEvaluateCase:
         assert result.case_id == "test-case"
         assert runner.call_count == 1
         assert judge.call_count == 1
+
+    def test_evaluate_case_default_judge(self, sample_case: CaseSpec) -> None:
+        """If no judge passed, built-in Judge should be instantiated and used."""
+        runner = MockRunner()
+        with (
+            patch("pondera.api.load_case_yaml", return_value=sample_case),
+            patch("pondera.api.get_settings"),
+            patch("pondera.api.apply_prejudge_checks", return_value=[]),
+            patch("pondera.api.choose_rubric", return_value=None),
+            patch("pondera.api.compute_pass", return_value=True),
+            patch("pondera.api.Judge") as mock_builtin_judge,
+        ):
+            inst = mock_builtin_judge.return_value
+
+            # Provide an async mock for judge method
+            async def _mock_judge(**kwargs):  # type: ignore
+                return Judgment(
+                    score=90,
+                    pass_fail=True,
+                    reasoning="ok",
+                    criteria_scores={"accuracy": 90},
+                    issues=[],
+                    suggestions=[],
+                )
+
+            inst.judge.side_effect = _mock_judge
+            result = evaluate_case("/fake/path.yaml", runner=runner)
+        assert result.judgment.score == 90
+        mock_builtin_judge.assert_called_once()
 
     def test_evaluate_case_detects_running_loop(self, sample_case: CaseSpec) -> None:
         """Test that sync wrapper detects running event loop."""

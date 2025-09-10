@@ -26,15 +26,9 @@ class TestJudgeError:
 class TestJudge:
     """Tests for Judge class."""
 
-    @patch("pondera.judge.base.get_settings")
     @patch("pondera.judge.base.default_rubric")
-    def test_init_with_defaults(self, mock_default_rubric: Any, mock_get_settings: Any) -> None:
+    def test_init_with_defaults(self, mock_default_rubric: Any) -> None:
         """Test Judge initialization with default settings."""
-        # Mock settings
-        mock_settings = Mock()
-        mock_settings.judge_model = "openai:gpt-4"
-        mock_get_settings.return_value = mock_settings
-
         # Mock default rubric
         default_rub = [RubricCriterion(name="accuracy", weight=1.0, description="How accurate")]
         mock_default_rubric.return_value = default_rub
@@ -42,21 +36,15 @@ class TestJudge:
         judge = Judge()
 
         # Verify settings were retrieved
-        mock_get_settings.assert_called_once()
         mock_default_rubric.assert_called_once()
 
         # Verify judge was initialized with correct defaults
-        assert judge._default_model == "openai:gpt-4"
         assert judge._default_rubric == default_rub
         assert judge._system_append == ""
 
-    @patch("pondera.judge.base.get_settings")
     @patch("pondera.judge.base.default_rubric")
-    def test_init_with_custom_model(self, mock_default_rubric: Any, mock_get_settings: Any) -> None:
+    def test_init_with_custom_model(self, mock_default_rubric: Any) -> None:
         """Test Judge initialization with custom model."""
-        mock_settings = Mock()
-        mock_settings.judge_model = "openai:gpt-4"
-        mock_get_settings.return_value = mock_settings
 
         default_rub = [RubricCriterion(name="accuracy", weight=1.0, description="How accurate")]
         mock_default_rubric.return_value = default_rub
@@ -65,16 +53,10 @@ class TestJudge:
         judge = Judge(model=custom_model)
 
         # Verify judge was initialized with custom model
-        assert judge._default_model == custom_model
         assert judge._default_rubric == default_rub
 
-    @patch("pondera.judge.base.get_settings")
-    def test_init_with_custom_rubric(self, mock_get_settings: Any) -> None:
+    def test_init_with_custom_rubric(self) -> None:
         """Test Judge initialization with custom rubric."""
-        mock_settings = Mock()
-        mock_settings.judge_model = "openai:gpt-4"
-        mock_get_settings.return_value = mock_settings
-
         custom_rubric = [
             RubricCriterion(name="accuracy", weight=0.6, description="How accurate"),
             RubricCriterion(name="completeness", weight=0.4, description="How complete"),
@@ -85,15 +67,9 @@ class TestJudge:
         # Check that the custom rubric is stored
         assert judge._default_rubric == custom_rubric
 
-    @patch("pondera.judge.base.get_settings")
     @patch("pondera.judge.base.default_rubric")
-    def test_init_with_system_append(
-        self, mock_default_rubric: Any, mock_get_settings: Any
-    ) -> None:
+    def test_init_with_system_append(self, mock_default_rubric: Any) -> None:
         """Test Judge initialization with system append."""
-        mock_settings = Mock()
-        mock_settings.judge_model = "openai:gpt-4"
-        mock_get_settings.return_value = mock_settings
 
         default_rub = [RubricCriterion(name="accuracy", weight=1.0, description="How accurate")]
         mock_default_rubric.return_value = default_rub
@@ -106,21 +82,16 @@ class TestJudge:
 
     @patch("pondera.judge.base.get_agent")
     @patch("pondera.judge.base.run_agent")
-    @patch("pondera.judge.base.get_settings")
     @patch("pondera.judge.base.default_rubric")
     @pytest.mark.asyncio
     async def test_judge_with_defaults(
         self,
         mock_default_rubric: Any,
-        mock_get_settings: Any,
         mock_run_agent: Any,
         mock_get_agent: Any,
     ) -> None:
         """Test judge method with default parameters."""
         # Setup mocks
-        mock_settings = Mock()
-        mock_settings.judge_model = "openai:gpt-4"
-        mock_get_settings.return_value = mock_settings
 
         default_rub = [RubricCriterion(name="correctness", weight=1.0, description="How correct")]
         mock_default_rubric.return_value = default_rub
@@ -165,20 +136,15 @@ class TestJudge:
 
     @patch("pondera.judge.base.get_agent")
     @patch("pondera.judge.base.run_agent")
-    @patch("pondera.judge.base.get_settings")
     @patch("pondera.judge.base.default_rubric")
     @pytest.mark.asyncio
     async def test_judge_with_custom_rubric(
         self,
         mock_default_rubric: Any,
-        mock_get_settings: Any,
         mock_run_agent: Any,
         mock_get_agent: Any,
     ) -> None:
         """Test judge method with custom rubric."""
-        mock_settings = Mock()
-        mock_settings.judge_model = "openai:gpt-4"
-        mock_get_settings.return_value = mock_settings
 
         default_rub = [RubricCriterion(name="accuracy", weight=1.0, description="Default")]
         mock_default_rubric.return_value = default_rub
@@ -214,16 +180,10 @@ class TestJudge:
         assert result.score == 75
         assert result.criteria_scores == {"custom_accuracy": 75, "completeness": 70}
 
-    @patch("pondera.judge.base.get_settings")
     @patch("pondera.judge.base.default_rubric")
     @pytest.mark.asyncio
-    async def test_judge_raises_error_without_rubric(
-        self, mock_default_rubric: Any, mock_get_settings: Any
-    ) -> None:
+    async def test_judge_raises_error_without_rubric(self, mock_default_rubric: Any) -> None:
         """Test that judge raises error when no rubric is provided."""
-        mock_settings = Mock()
-        mock_settings.judge_model = "openai:gpt-4"
-        mock_get_settings.return_value = mock_settings
 
         # Mock empty default rubric
         mock_default_rubric.return_value = []
@@ -240,20 +200,15 @@ class TestJudge:
 
     @patch("pondera.judge.base.get_agent")
     @patch("pondera.judge.base.run_agent")
-    @patch("pondera.judge.base.get_settings")
     @patch("pondera.judge.base.default_rubric")
     @pytest.mark.asyncio
     async def test_judge_with_system_append(
         self,
         mock_default_rubric: Any,
-        mock_get_settings: Any,
         mock_run_agent: Any,
         mock_get_agent: Any,
     ) -> None:
         """Test judge method with system append parameter."""
-        mock_settings = Mock()
-        mock_settings.judge_model = "openai:gpt-4"
-        mock_get_settings.return_value = mock_settings
 
         default_rub = [RubricCriterion(name="accuracy", weight=1.0, description="How accurate")]
         mock_default_rubric.return_value = default_rub
@@ -291,19 +246,14 @@ class TestJudge:
 
     @patch("pondera.judge.base.rubric_to_markdown")
     @patch("pondera.judge.base.rubric_weight_note")
-    @patch("pondera.judge.base.get_settings")
     @patch("pondera.judge.base.default_rubric")
     def test_system_prompt_generation(
         self,
         mock_default_rubric: Any,
-        mock_get_settings: Any,
         mock_rubric_weight_note: Any,
         mock_rubric_to_markdown: Any,
     ) -> None:
         """Test that system prompt is generated correctly."""
-        mock_settings = Mock()
-        mock_settings.judge_model = "openai:gpt-4"
-        mock_get_settings.return_value = mock_settings
 
         default_rub = [RubricCriterion(name="accuracy", weight=1.0, description="How accurate")]
         mock_default_rubric.return_value = default_rub
@@ -331,15 +281,9 @@ class TestJudge:
         mock_rubric_to_markdown.assert_called_once_with(custom_rubric)
         mock_rubric_weight_note.assert_called_once_with(custom_rubric)
 
-    @patch("pondera.judge.base.get_settings")
     @patch("pondera.judge.base.default_rubric")
-    def test_system_prompt_empty_extra(
-        self, mock_default_rubric: Any, mock_get_settings: Any
-    ) -> None:
+    def test_system_prompt_empty_extra(self, mock_default_rubric: Any) -> None:
         """Test system prompt generation with empty extra text."""
-        mock_settings = Mock()
-        mock_settings.judge_model = "openai:gpt-4"
-        mock_get_settings.return_value = mock_settings
 
         default_rub = [RubricCriterion(name="accuracy", weight=1.0, description="How accurate")]
         mock_default_rubric.return_value = default_rub
@@ -356,21 +300,15 @@ class TestJudge:
 
     @patch("pondera.judge.base.get_agent")
     @patch("pondera.judge.base.run_agent")
-    @patch("pondera.judge.base.get_settings")
     @patch("pondera.judge.base.default_rubric")
     @pytest.mark.asyncio
     async def test_judge_user_prompt_format(
         self,
         mock_default_rubric: Any,
-        mock_get_settings: Any,
         mock_run_agent: Any,
         mock_get_agent: Any,
     ) -> None:
         """Test that the user prompt is formatted correctly."""
-        mock_settings = Mock()
-        mock_settings.judge_model = "openai:gpt-4"
-        mock_get_settings.return_value = mock_settings
-
         default_rub = [RubricCriterion(name="accuracy", weight=1.0, description="How accurate")]
         mock_default_rubric.return_value = default_rub
 
@@ -417,20 +355,15 @@ class TestJudge:
 
     @patch("pondera.judge.base.get_agent")
     @patch("pondera.judge.base.run_agent")
-    @patch("pondera.judge.base.get_settings")
     @patch("pondera.judge.base.default_rubric")
     @pytest.mark.asyncio
     async def test_judge_prefers_custom_over_default_rubric(
         self,
         mock_default_rubric: Any,
-        mock_get_settings: Any,
         mock_run_agent: Any,
         mock_get_agent: Any,
     ) -> None:
         """Test that custom rubric takes precedence over default rubric."""
-        mock_settings = Mock()
-        mock_settings.judge_model = "openai:gpt-4"
-        mock_get_settings.return_value = mock_settings
 
         default_rub = [RubricCriterion(name="default", weight=1.0, description="Default criterion")]
         mock_default_rubric.return_value = default_rub

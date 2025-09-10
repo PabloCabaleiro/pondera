@@ -5,11 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## WIP
 
-- [ ] Remove duplicate settings, e.g: `judge_model`, `default_model`
-- [ ] Add Protocol to class Judge in case someone wants to override it.
+- [x] Remove duplicate settings, e.g: `judge_model`, `default_model`
+- [x] Add Protocol to class Judge in case someone wants to override it.
 - [ ] Improve results message.
-- [ ] Update readme.
-- [ ] Removing cli for now.
+- [x] Update readme.
+- [x] Removing cli for now.
 - [ ] Fixing artfacts report for api.
 
 

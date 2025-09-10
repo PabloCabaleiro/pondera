@@ -92,7 +92,6 @@ class TestCaseJudge:
         assert judge.overall_threshold == 70
         assert judge.per_criterion_thresholds == {}
         assert judge.rubric is None
-        assert judge.model is None
         assert judge.system_append == ""
 
     def test_full_judge(self) -> None:
@@ -106,7 +105,6 @@ class TestCaseJudge:
             overall_threshold=85,
             per_criterion_thresholds={"accuracy": 90, "completeness": 80},
             rubric=rubric_criteria,
-            model="openai:gpt-4o-mini",
             system_append="Be extra strict",
         )
 
@@ -115,7 +113,6 @@ class TestCaseJudge:
         assert judge.per_criterion_thresholds == {"accuracy": 90, "completeness": 80}
         assert len(judge.rubric) == 1
         assert judge.rubric[0].name == "accuracy"
-        assert judge.model == "openai:gpt-4o-mini"
         assert judge.system_append == "Be extra strict"
 
     def test_invalid_threshold_range(self) -> None:

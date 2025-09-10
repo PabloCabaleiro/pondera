@@ -3,7 +3,8 @@ import time
 from pathlib import Path
 from typing import Any
 
-from pondera.judge.base import Judge
+from pondera.judge.protocol import JudgeProtocol
+from pondera.judge import Judge
 from pondera.runner.base import Runner, ProgressCallback, emit_progress
 from pondera.models.evaluation import EvaluationResult
 from pondera.models.rubric import RubricCriterion
@@ -22,7 +23,7 @@ async def _execute_case_once(
     *,
     case: "CaseSpec",
     runner: Runner,
-    judge: Judge,
+    judge: JudgeProtocol | None,
     default_rubric: list[RubricCriterion] | None,
     progress: ProgressCallback | None,
 ) -> EvaluationResult:
@@ -35,7 +36,8 @@ async def _execute_case_once(
     use_rubric = choose_rubric(case.judge.rubric, default_rubric)
     await emit_progress(progress, "pondera: judging answer…")
     t2 = time.perf_counter()
-    judgment = await _judge_case(case, run_res, judge, use_rubric)
+    the_judge: JudgeProtocol = judge or Judge()
+    judgment = await _judge_case(case, run_res, the_judge, use_rubric)
     t3 = time.perf_counter()
     timings = _get_timings(t0, t1, t2, t3)
     passed = _compute_pass(case, failures, judgment)
@@ -56,7 +58,7 @@ async def evaluate_case_async(
     case_yaml_path: str | Path,
     *,
     runner: Runner,
-    judge: Judge,
+    judge: JudgeProtocol | None = None,
     default_rubric: list[RubricCriterion] | None = None,
     progress: ProgressCallback | None = None,
     primary_metric: AggregationMetric = AggregationMetric.mean,
@@ -87,7 +89,7 @@ async def evaluate_case_async(
         case_id=case.id,
         evaluations=evaluations,
         aggregates=aggregates,
-        passed_primary=passed_primary,
+        passed=passed_primary,
         primary_metric=primary_metric,
     )
 
@@ -103,7 +105,7 @@ def _run_case(case: "CaseSpec", runner: Runner, progress: ProgressCallback | Non
 
 
 def _judge_case(
-    case: "CaseSpec", run_res: Any, judge: Judge, rubric: list[RubricCriterion] | None
+    case: "CaseSpec", run_res: Any, judge: JudgeProtocol, rubric: list[RubricCriterion] | None
 ) -> Any:
     """Judge the answer using the judge."""
     return judge.judge(
@@ -136,7 +138,7 @@ async def _run_multiple_evaluations(
     case: "CaseSpec",
     reps: int,
     runner: Runner,
-    judge: Judge,
+    judge: JudgeProtocol | None,
     default_rubric: list[RubricCriterion] | None,
     progress: ProgressCallback | None,
 ) -> list[EvaluationResult]:
@@ -188,7 +190,7 @@ def evaluate_case(
     case_yaml_path: str | Path,
     *,
     runner: Runner,
-    judge: Judge,
+    judge: JudgeProtocol | None = None,
     default_rubric: list[RubricCriterion] | None = None,
     progress: ProgressCallback | None = None,
     primary_metric: AggregationMetric = AggregationMetric.mean,

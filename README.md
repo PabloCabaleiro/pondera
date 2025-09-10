@@ -1,16 +1,16 @@
 # Pondera
 
-Pondera is a lightweight, YAML-first framework to evaluate AI models and agents with pluggable runners and an LLM-as-a-judge. It keeps test cases in YAML, runs your model (however you ship it), and scores outputs against a rubric—no tight coupling to any specific stack.
+Lightweight, YAML‑first evaluation for AI models and agents. You write cases in YAML, provide a tiny async runner that returns markdown, and get a strict rubric‑scored JSON judgment back. No framework lock‑in.
 
 ## Why Pondera?
 
-YAML single source of truth for inputs & expectations. Model/provider agnostic: you supply a runner (any callable that can produce markdown). Judge returns a strict JSON schema (Judgment) with weighted rubric scoring. Portable via CLI or small Python API. Reproducible artifacts per case (answer, judgment, summary, meta). Minimal defaults; you can override rubric per case.
+Single source of truth (YAML). Any model/provider (you control inference). Strict JSON judgment schema with weighted rubric scoring. Simple Python API (CLI removed). Reproducible artifacts (answer, judgment, summary, meta). Per‑case rubric overrides.
 
 ## Core Concepts
 
 ### Case (YAML)
 
-The single source of truth for a test (query, attachments, expectations, judge config).
+Defines one evaluation: query, optional attachments, expectations, thresholds, optional per‑case rubric.
 
 Minimal example:
 
@@ -26,7 +26,7 @@ judge:
 timeout_s: 120
 ```
 
-Rich example with rubric override
+Rich example with rubric override:
 
 ```yaml
 id: genes_per_chr
@@ -62,7 +62,7 @@ timeout_s: 240
 ```
 
 
-- **Runner (you)**: how to obtain an answer given the case input. Must implement:
+- **Runner (you)**: produces an answer markdown given the case input. Must implement:
 
 ```python
 class Runner(Protocol):
@@ -70,7 +70,26 @@ class Runner(Protocol):
                   params: dict[str, Any] | None = None, progress: ProgressCallback | None = None) -> RunResult: ...
 ```
 
-- **Judge (Pondera)**: scores the answer with a rubric and returns a strict Judgment.
+- **Judge (built-in default)**: the bundled class `Judge` (import with `from pondera.judge import Judge`) scores with a rubric and returns a strict `Judgment`. It is the default expectation. You can override it by passing any object matching `JudgeProtocol` (async `judge(...) -> Judgment`). Custom example:
+
+```python
+from pondera.judge import JudgeProtocol
+from pondera.models.judgment import Judgment
+
+class ConstantJudge(JudgeProtocol):
+  async def judge(self, *, question: str, answer_markdown: str, files, judge_request: str,
+          rubric=None, system_append: str = "") -> Judgment:
+    return Judgment(
+      score=100,
+      pass_fail=True,
+      reasoning="Always passes (demo)",
+      criteria_scores={c.name: 100 for c in (rubric or [])} if rubric else {"overall": 100},
+      issues=[],
+      suggestions=["This is a placeholder judge"],
+    )
+
+# use: evaluate_case(..., judge=ConstantJudge())
+```
 
 ## Install
 
@@ -81,27 +100,15 @@ uv add pondera
 uv pip install -e .
 ```
 
-!!! The judge uses the pydantic-ai ecosystem. Configure your provider creds via env (e.g., OPENAI_API_KEY) or via PONDERA_… variables (see Settings).
+The judge uses the pydantic-ai ecosystem. Configure provider credentials via env vars (OPENAI_API_KEY, ANTHROPIC_API_KEY, AZURE_OPENAI_API_KEY, etc.) plus optional `PONDERA_` settings.
 
 ## Usage
 
-### 1. CLI
-
-```bash
-pondera run eval/cases \
-  --runner myproj.eval_targets:make_runner \
-  --artifacts eval/artifacts
-```
-
-`--runner` accepts `module:object` where object is a factory, a class, or an instance with run(...).
-
-Artifacts are written under `<artifacts>/<case_id>/`.
-
-### 2. Python API
+### Python API
 
 ```python
 from pondera.api import evaluate_case
-from pondera.judge.pydantic_ai import Judge
+from pondera.judge import Judge
 
 class DemoRunner:
     async def run(self, *, question, attachments=None, params=None, progress=None):
@@ -111,11 +118,11 @@ res = evaluate_case("eval/cases/hello.yaml", runner=DemoRunner(), judge=Judge())
 print(res.passed, res.judgment.score)
 ```
 
-### 3. Testing (pytest)
+### Testing (pytest)
 
 ```python
 from pondera.api import evaluate_case
-from pondera.judge.pydantic_ai import LlmJudge
+from pondera.judge import Judge
 
 def test_hello_case():
   class DemoRunner:
@@ -130,37 +137,36 @@ See `docs/TESTING.md` for markers and commands.
 ## Quickstart
 
 1. Install: `uv add pondera`
-2. Create a case YAML (e.g. `eval/cases/hello.yaml`)
-3. Write a small runner class or factory with an async `run` returning `answer_markdown`
-4. Run: `pondera run eval/cases --runner mypkg.runner_factory:make_runner --artifacts eval/artifacts`
-5. Inspect artifacts under `eval/artifacts/<case_id>/`
+2. Write a case YAML under `eval/cases/`
+3. Implement a runner with `async run(...)-> {"answer_markdown": str}`
+4. Call `evaluate_case(path, runner=RunnerImpl(), judge=Judge())`
+5. Use results / save artifacts however you like
 
-## YAML Schema (concise)
 
-Required top-level fields: `id`, `input.query`.
-Input: `query: str`, optional `attachments: [paths]`, `params: {free-form}`.
-Expect (all optional lists): `must_contain`, `must_not_contain`, `regex_must_match`.
-Judge: `request` (instructions for judge), `overall_threshold` (default 70), `per_criterion_thresholds` (dict), optional `rubric` (list of {name, weight, description}), `model` (override), `system_append` (extra system guidance).
-Timeout: `timeout_s` (default 240).
-Repetitions: `repetitions` (default 1) – if >1, you can call the multi API to measure reproducibility.
 
 ## Artifacts
 
-Per case directory (slugified id):
-answer.md (raw markdown answer)
-judgment.json (typed judge output)
-meta.json (pass/fail, thresholds, timings, runner metadata)
-summary.md (human readable scores + issues/suggestions)
+**Per case directory** (if you persist):
 
-For repeated runs (multi evaluation) you can programmatically gather all run artifacts and aggregated statistics (min/mean/median/max/stdev/variance) via `evaluate_case_multi` / `evaluate_case_multi_async`.
+- `answer.md` (model's answer)
+- `judgment.json` (judgment schema)
+- `meta.json` (thresholds, timings, pass flag)
+- `summary.md` (human readable summary)
+
+**Multi evaluation**:
+
+- aggregated stats (min / max / mean / median / stdev / variance) per criterion + overall.
 
 ## Environment & Settings
 
-Settings model: `pondera.settings.PonderaSettings` (env prefix `PONDERA_`, `.env` supported). Key fields:
-PONDERA_ARTIFACTS_DIR (default eval/artifacts)
-PONDERA_TIMEOUT_DEFAULT_S (default 240)
-PONDERA_JUDGE_MODEL (planned default identifier; current judge path uses provider family vars below)
-Model provider selection uses generic fields: set `PONDERA_MODEL_FAMILY` and the corresponding model name + API key, e.g. for OpenAI:
+Settings model: `pondera.settings.PonderaSettings` (env prefix `PONDERA_`). Key fields:
+
+- `PONDERA_ARTIFACTS_DIR`: (default eval/artifacts)
+- `MODEL_FAMILY`: (e.g. openai | anthropic | azure | ollama | bedrock)
+- `MODEL_TIMEOUT`: default 120
+- Provider model name vars (`OPENAI_MODEL_NAME`, `AZURE_MODEL_NAME`, `OLLAMA_MODEL_NAME`, `BEDROCK_MODEL_NAME`, etc.) and credentials.
+
+Example (OpenAI):
 
 ```bash
 export PONDERA_MODEL_FAMILY=openai
@@ -168,36 +174,50 @@ export OPENAI_API_KEY=sk-...
 export PONDERA_OPENAI_MODEL_NAME=gpt-4o-mini
 ```
 
-Similar patterns: anthropic (ANTHROPIC_API_KEY, PONDERA_MODEL_FAMILY=anthropic), azure (AZURE_OPENAI_* plus PONDERA_MODEL_FAMILY=azure), etc.
+Similar patterns: anthropic (`ANTHROPIC_API_KEY` + `MODEL_FAMILY`=anthropic), azure (`AZURE_OPENAI_*` env vars + `MODEL_FAMILY`=azure), ollama (`OLLAMA_URL` + `MODEL_FAMILY`=ollama), bedrock (AWS credentials + `MODEL_FAMILY`=bedrock).
 
-## Limitations / Notes
+### .env Template
 
-Single judge only (no aggregation). Built-in generic runners not yet included (write a tiny custom runner). Pytest helper from earlier roadmap not yet implemented. Multi-judge, runner templates, export formats are roadmap items.
-
-## Settings
-
-Centralized via `pondera.settings.PonderaSettings` (env prefix `PONDERA_`, `.env` supported):
-
-- `PONDERA_JUDGE_MODEL` (default: `openai:gpt-4o-mini`)
-- `PONDERA_ARTIFACTS_DIR` (default: `eval/artifacts`)
-- `PONDERA_TIMEOUT_DEFAULT_S` (default: 240)
-
-Provider creds exported for SDKs/pydantic-ai:
-
-- `OPENAI_API_KEY` (or `PONDERA_OPENAI_API_KEY`)
-- `ANTHROPIC_API_KEY`, `AZURE_OPENAI_*`, etc.
+Create a `.env` file in your project root (values below are examples):
 
 ```bash
-export PONDERA_JUDGE_MODEL="openai:gpt-4o-mini"
-export OPENAI_API_KEY="sk-..."
+# Core
+MODEL_FAMILY=azure            # azure | openai | ollama | bedrock | anthropic
+MODEL_TIMEOUT=120             # seconds
+VDB_EMBEDDINGS_MODEL_FAMILY=azure
+
+# Azure OpenAI
+AZURE_OPENAI_ENDPOINT=https://your_endpoint.openai.azure.com
+AZURE_OPENAI_API_VERSION=2024-06-01
+AZURE_OPENAI_API_KEY=your_secret_key
+AZURE_MODEL_NAME=gpt-4o
+AZURE_OPENAI_DEPLOYMENT=gpt-4o
+AZURE_VDB_EMBEDDINGS_MODEL_NAME=text-embedding-3-small
+
+# OpenAI
+OPENAI_API_KEY=openai_api_key
+OPENAI_MODEL_NAME=gpt-4.5-preview
+OPENAI_VDB_EMBEDDINGS_MODEL_NAME=text-embedding-3-small
+
+# Ollama (local)
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL_NAME=llama3.2:3b-instruct-fp16
+OLLAMA_VDB_EMBEDDINGS_MODEL_NAME=snowflake-arctic-embed2:latest
+
+# Bedrock (example)
+AWS_REGION=us-east-1
+BEDROCK_MODEL_NAME=anthropic.claude-3-sonnet-20240229-v1:0
+
+# Anthropic
+ANTHROPIC_API_KEY=your_anthropic_key
 ```
 
-## Roadmap (abridged)
+Guidance: set `MODEL_FAMILY`, supply the matching provider credentials + model name(s), adjust `MODEL_TIMEOUT` as needed. Embeddings variables optional unless you use vector DB functionality.
 
-v0.1 (current): core schemas, single judge, CLI, API, artifacts, basic tests.
-v0.2: multi-judge aggregation, runner artifact propagation, reproducibility (multi evaluation) support.
-Backlog: built-in runners (callable/http/cli/notebook), config file, export formats (CSV/JSONL/HTML), pytest plugin, MCP enhancements.
+## Limitations
 
-## Getting Involved
+- Artifacts from the runners are just read as plain text and the content provided to the judge up to 20 KB per file.
 
-Open issues for runner/judge adapters, schema refinements, or export needs. PRs welcome (keep changes small and tested). License: MIT.
+## Contributing
+
+Open issues for runner/judge adapters, schema tweaks, or export needs. PRs welcome (keep them small and tested). License: MIT.

@@ -53,7 +53,5 @@ class MultiEvaluationResult(BaseModel):
         description="Individual evaluation runs (length = repetitions)."
     )
     aggregates: CriteriaAggregates
-    passed_primary: bool = Field(
-        description="Pass/fail according to primary aggregation metric (overall)."
-    )
+    passed: bool = Field(description="Pass/fail according to primary aggregation metric (overall).")
     primary_metric: AggregationMetric
