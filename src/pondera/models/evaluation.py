@@ -1,5 +1,3 @@
-# evaluation.py
-
 from pydantic import BaseModel, Field, ConfigDict
 from pondera.models.run import RunResult
 from pondera.models.judgment import Judgment

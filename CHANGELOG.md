@@ -3,12 +3,13 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## WIP
+## v0.1.0
 
 ### Added
 
 - **Model agnostic**: improved the agents module to support different models using PydanticAI.
 - **Judging**: Multi-judge aggregation (mean/median/majority), caching by case hash.
+- **Propagating artifacts**: Propagating runner artifacts to the Judge.
 
 ## v0.1.0 — MVP
 

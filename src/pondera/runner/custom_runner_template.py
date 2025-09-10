@@ -32,6 +32,7 @@ async def my_runner(
         {
             "answer_markdown": answer_md,
             "artifacts": [],  # optional file paths/URIs
+            "files": [],  # list of files to expose to judge (subset/superset of artifacts)
             "metadata": {"steps": 1},  # optional info
         },
         question=question,

@@ -67,5 +67,5 @@ def normalize_run_result(result: Any, *, question: str) -> RunResult:
 
     raise RunnerError(
         f"Unsupported runner return type {type(result)!r}. "
-        "Return a RunResult or a dict with 'answer_markdown' (and optional 'artifacts', 'metadata')."
+        "Return a RunResult or a dict with 'answer_markdown' (and optional 'artifacts', 'files', 'metadata')."
     )

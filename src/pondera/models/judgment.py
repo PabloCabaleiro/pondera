@@ -1,5 +1,3 @@
-# judgment.py
-
 from pydantic import BaseModel, Field, ConfigDict
 
 # ─────────────────────────────────────────────────────────────────────────────

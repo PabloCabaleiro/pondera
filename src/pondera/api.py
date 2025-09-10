@@ -1,12 +1,10 @@
-# src/pondera/api.py
-
 import asyncio
 import time
 from pathlib import Path
-from typing import Union, Any
+from typing import Any
 
 from pondera.judge.base import Judge
-from pondera.runner.base import Runner, ProgressCallback, normalize_run_result, emit_progress
+from pondera.runner.base import Runner, ProgressCallback, emit_progress
 from pondera.models.evaluation import EvaluationResult
 from pondera.models.rubric import RubricCriterion
 from pondera.models.multi_evaluation import (
@@ -31,44 +29,24 @@ async def _execute_case_once(
     """Internal single execution helper (no YAML reload)."""
     await emit_progress(progress, f"pondera: running case '{case.id}'…")
     t0 = time.perf_counter()
-    raw_run = await runner.run(
-        question=case.input.query,
-        attachments=case.input.attachments,
-        params=case.input.params,
-        progress=progress,
-    )
-    run_res = normalize_run_result(raw_run, question=case.input.query)
+    run_res = await _run_case(case, runner, progress)
     t1 = time.perf_counter()
     failures = apply_prejudge_checks(run_res.answer_markdown or "", case)
     use_rubric = choose_rubric(case.judge.rubric, default_rubric)
     await emit_progress(progress, "pondera: judging answer…")
     t2 = time.perf_counter()
-    judgment = await judge.judge(
-        question=case.input.query,
-        answer_markdown=run_res.answer_markdown or "",
-        judge_request=case.judge.request,
-        rubric=use_rubric,
-        system_append=case.judge.system_append,
-    )
+    judgment = await _judge_case(case, run_res, judge, use_rubric)
     t3 = time.perf_counter()
-    overall_th = case.judge.overall_threshold
-    percrit_th = case.judge.per_criterion_thresholds or {}
-    passed = compute_pass(
-        precheck_failures=failures,
-        overall_threshold=overall_th,
-        per_criterion_thresholds=percrit_th,
-        criteria_scores=judgment.criteria_scores,
-        overall_score=judgment.score,
-    )
-    timings = {"runner_s": t1 - t0, "judge_s": t3 - t2, "total_s": (t3 - t0)}
+    timings = _get_timings(t0, t1, t2, t3)
+    passed = _compute_pass(case, failures, judgment)
     return EvaluationResult(
         case_id=case.id,
         case=case,
         run=run_res,
         judgment=judgment,
         precheck_failures=failures,
-        overall_threshold=overall_th,
-        per_criterion_thresholds=percrit_th,
+        overall_threshold=case.judge.overall_threshold,
+        per_criterion_thresholds=case.judge.per_criterion_thresholds or {},
         passed=passed,
         timings_s=timings,
     )
@@ -82,7 +60,7 @@ async def evaluate_case_async(
     default_rubric: list[RubricCriterion] | None = None,
     progress: ProgressCallback | None = None,
     primary_metric: AggregationMetric = AggregationMetric.mean,
-) -> Union[EvaluationResult, MultiEvaluationResult]:
+) -> EvaluationResult | MultiEvaluationResult:
     """Evaluate a case (optionally multiple repetitions) and return results.
 
     - Reads `repetitions` from the case YAML. If `repetitions == 1` returns a single `EvaluationResult`.
@@ -101,7 +79,68 @@ async def evaluate_case_async(
             default_rubric=default_rubric,
             progress=progress,
         )
+    evaluations = await _run_multiple_evaluations(
+        case, reps, runner, judge, default_rubric, progress
+    )
+    aggregates, passed_primary = _aggregate_multi_evaluations(evaluations, primary_metric)
+    return MultiEvaluationResult(
+        case_id=case.id,
+        evaluations=evaluations,
+        aggregates=aggregates,
+        passed_primary=passed_primary,
+        primary_metric=primary_metric,
+    )
 
+
+def _run_case(case: "CaseSpec", runner: Runner, progress: ProgressCallback | None) -> Any:
+    """Run the case using the runner."""
+    return runner.run(
+        question=case.input.query,
+        attachments=case.input.attachments,
+        params=case.input.params,
+        progress=progress,
+    )
+
+
+def _judge_case(
+    case: "CaseSpec", run_res: Any, judge: Judge, rubric: list[RubricCriterion] | None
+) -> Any:
+    """Judge the answer using the judge."""
+    return judge.judge(
+        question=case.input.query,
+        answer_markdown=run_res.answer_markdown or "",
+        files=run_res.files,
+        judge_request=case.judge.request,
+        rubric=rubric,
+        system_append=case.judge.system_append,
+    )
+
+
+def _get_timings(t0: float, t1: float, t2: float, t3: float) -> dict[str, float]:
+    """Return timing measurements."""
+    return {"runner_s": t1 - t0, "judge_s": t3 - t2, "total_s": (t3 - t0)}
+
+
+def _compute_pass(case: "CaseSpec", failures: list[str], judgment: Any) -> bool:
+    """Compute pass/fail for the evaluation."""
+    return compute_pass(
+        precheck_failures=failures,
+        overall_threshold=case.judge.overall_threshold,
+        per_criterion_thresholds=case.judge.per_criterion_thresholds or {},
+        criteria_scores=judgment.criteria_scores,
+        overall_score=judgment.score,
+    )
+
+
+async def _run_multiple_evaluations(
+    case: "CaseSpec",
+    reps: int,
+    runner: Runner,
+    judge: Judge,
+    default_rubric: list[RubricCriterion] | None,
+    progress: ProgressCallback | None,
+) -> list[EvaluationResult]:
+    """Run multiple evaluations for repetitions."""
     evaluations: list[EvaluationResult] = []
     for i in range(reps):
         if progress:
@@ -114,8 +153,14 @@ async def evaluate_case_async(
             progress=progress,
         )
         evaluations.append(ev)
+    return evaluations
 
-    # Aggregation logic (same as previous multi API)
+
+def _aggregate_multi_evaluations(
+    evaluations: list[EvaluationResult],
+    primary_metric: AggregationMetric,
+) -> tuple[CriteriaAggregates, bool]:
+    """Aggregate results and compute pass/fail for multi-evaluations."""
     overall_scores = [ev.judgment.score for ev in evaluations]
     overall_agg = aggregate_numbers([float(s) for s in overall_scores], primary_metric)
     criteria_keys: set[str] = set()
@@ -136,13 +181,7 @@ async def evaluate_case_async(
             criteria_ok = False
             break
     passed_primary = (overall_value_for_pass >= case_overall_th) and criteria_ok
-    return MultiEvaluationResult(
-        case_id=case.id,
-        evaluations=evaluations,
-        aggregates=aggregates,
-        passed_primary=passed_primary,
-        primary_metric=primary_metric,
-    )
+    return aggregates, passed_primary
 
 
 def evaluate_case(
@@ -153,7 +192,7 @@ def evaluate_case(
     default_rubric: list[RubricCriterion] | None = None,
     progress: ProgressCallback | None = None,
     primary_metric: AggregationMetric = AggregationMetric.mean,
-) -> Union[EvaluationResult, MultiEvaluationResult]:
+) -> EvaluationResult | MultiEvaluationResult:
     """Sync wrapper around `evaluate_case_async` supporting repetitions (see async docstring)."""
     try:
         loop = asyncio.get_running_loop()

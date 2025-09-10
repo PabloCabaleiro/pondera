@@ -1,7 +1,6 @@
 from statistics import mean, median, pstdev, pvariance
 from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
-from typing import List, Dict
 from pondera.models.evaluation import EvaluationResult
 
 
@@ -23,7 +22,8 @@ class ScoreAggregate(BaseModel):
     variance: float = Field(description="Population variance (σ²).")
 
 
-def aggregate_numbers(values: List[float], metric: AggregationMetric) -> ScoreAggregate:
+def aggregate_numbers(values: list[float], metric: AggregationMetric) -> ScoreAggregate:
+    """Aggregate a list of numeric values computing standard statistics."""
     if not values:
         raise ValueError("Cannot aggregate empty value list")
     return ScoreAggregate(
@@ -40,7 +40,7 @@ def aggregate_numbers(values: List[float], metric: AggregationMetric) -> ScoreAg
 class CriteriaAggregates(BaseModel):
     model_config = ConfigDict(extra="forbid")
     overall: ScoreAggregate
-    per_criterion: Dict[str, ScoreAggregate]
+    per_criterion: dict[str, ScoreAggregate]
 
 
 class MultiEvaluationResult(BaseModel):
@@ -49,7 +49,7 @@ class MultiEvaluationResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     case_id: str
-    evaluations: List[EvaluationResult] = Field(
+    evaluations: list[EvaluationResult] = Field(
         description="Individual evaluation runs (length = repetitions)."
     )
     aggregates: CriteriaAggregates

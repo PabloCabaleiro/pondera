@@ -1,4 +1,6 @@
 # src/pondera/judge/base.py
+from pathlib import Path
+
 from pondera.models.rubric import RubricCriterion
 from pondera.models.judgment import Judgment
 from pondera.settings import get_settings
@@ -36,6 +38,7 @@ class Judge:
         *,
         question: str,
         answer_markdown: str,
+        files: list[str] | None,
         judge_request: str,
         rubric: list[RubricCriterion] | None = None,
         system_append: str = "",
@@ -52,12 +55,51 @@ class Judge:
         # Create agent with the specified model and system prompt
         agent = get_agent(system_prompt=use_system, output_type=Judgment)
 
+        files_section = "\n".join(f"- {p}" for p in (files or [])) or "(none)"
+
+        # Inline small text file contents with conservative limits
+        inline_snippets: list[str] = []
+        MAX_FILES = 5
+        MAX_BYTES_PER_FILE = 20_000  # 20 KB per file
+        total = 0
+        for p in (files or [])[:MAX_FILES]:
+            try:
+                fp = Path(p)
+                if not fp.exists() or not fp.is_file():  # skip missing
+                    inline_snippets.append(f"--- {p} (missing) ---")
+                    continue
+                size = fp.stat().st_size
+                if size > MAX_BYTES_PER_FILE:
+                    inline_snippets.append(
+                        f"--- {p} (skipped: {size} bytes > {MAX_BYTES_PER_FILE}) ---"
+                    )
+                    continue
+                raw = fp.read_bytes()
+                if b"\x00" in raw:  # naive binary check
+                    inline_snippets.append(f"--- {p} (skipped: binary) ---")
+                    continue
+                text = raw.decode("utf-8", errors="replace")
+                snippet = text[:MAX_BYTES_PER_FILE]
+                total += len(snippet)
+                inline_snippets.append(f"--- {p} ({len(snippet)} bytes) ---\n{snippet}".rstrip())
+            except Exception as e:  # never break judging
+                inline_snippets.append(f"--- {p} (error reading: {e}) ---")
+
+        files_content_block = (
+            "\n\nFile contents (truncated/limited):\n" + "\n\n".join(inline_snippets)
+            if inline_snippets
+            else ""
+        )
+
         user_prompt = f"""
             User question:
             {question}
 
             Assistant answer (Markdown):
             {answer_markdown}
+
+            Generated files (paths):
+            {files_section}{files_content_block}
 
             Evaluation request (instructions for the judge):
             {judge_request}

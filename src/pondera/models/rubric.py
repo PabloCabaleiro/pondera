@@ -1,5 +1,3 @@
-# rubric.py
-
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 # ─────────────────────────────────────────────────────────────────────────────

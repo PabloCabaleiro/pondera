@@ -82,6 +82,8 @@ def write_case_artifacts(artifacts_root: Path | str, res: EvaluationResult) -> P
         "precheck_failures": res.precheck_failures,
         "timings_s": res.timings_s,
         "runner_metadata": res.run.metadata,
+        "artifacts": res.run.artifacts,
+        "files": res.run.files,
     }
     (case_dir / "meta.json").write_text(
         json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8"

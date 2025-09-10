@@ -28,6 +28,7 @@ class MockJudge:
         rubric: list[Any] | None = None,
         model: str | None = None,
         system_append: str = "",
+        files: list[str] | None = None,
     ) -> Judgment:
         return Judgment(reasoning="Mock reasoning", score=0.8, max_score=1.0)
 
@@ -40,6 +41,7 @@ class MockRunner:
         *,
         question: str,
         attachments: list[str] | None = None,
+        files: list[str] | None = None,
         params: dict[str, Any] | None = None,
         progress: Any = None,
     ) -> RunResult:

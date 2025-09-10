@@ -66,6 +66,7 @@ class MockJudge:
         *,
         question: str,
         answer_markdown: str,
+        files: list[str] | None = None,
         judge_request: str | None = None,
         rubric: list[RubricCriterion] | None = None,
         model: str | None = None,
@@ -75,6 +76,7 @@ class MockJudge:
         self.last_call_args = {
             "question": question,
             "answer_markdown": answer_markdown,
+            "files": files,
             "judge_request": judge_request,
             "rubric": rubric,
             "model": model,
@@ -122,10 +124,8 @@ class TestEvaluateCaseAsync:
 
     @pytest.mark.asyncio
     async def test_evaluate_case_async_basic(self, sample_case: CaseSpec) -> None:
-        """Test basic evaluation workflow."""
         runner = MockRunner()
         judge = MockJudge()
-
         with (
             patch("pondera.api.load_case_yaml", return_value=sample_case),
             patch("pondera.api.get_settings"),
@@ -134,7 +134,6 @@ class TestEvaluateCaseAsync:
             patch("pondera.api.compute_pass", return_value=True),
         ):
             result = await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
-
         assert isinstance(result, EvaluationResult)
         assert result.case_id == "test-case"
         assert result.case == sample_case
@@ -144,11 +143,9 @@ class TestEvaluateCaseAsync:
 
     @pytest.mark.asyncio
     async def test_evaluate_case_async_with_progress(self, sample_case: CaseSpec) -> None:
-        """Test evaluation with progress callback."""
         runner = MockRunner()
         judge = MockJudge()
         progress_callback = AsyncMock()
-
         with (
             patch("pondera.api.load_case_yaml", return_value=sample_case),
             patch("pondera.api.get_settings"),
@@ -159,8 +156,6 @@ class TestEvaluateCaseAsync:
             await evaluate_case_async(
                 "/fake/path.yaml", runner=runner, judge=judge, progress=progress_callback
             )
-
-        # Should have called progress for starting and judging
         assert progress_callback.call_count >= 2
         progress_callback.assert_any_call("pondera: running case 'test-case'…")
         progress_callback.assert_any_call("pondera: judging answer…")
@@ -169,10 +164,8 @@ class TestEvaluateCaseAsync:
     async def test_evaluate_case_async_with_default_rubric(
         self, sample_case: CaseSpec, sample_rubric: list[RubricCriterion]
     ) -> None:
-        """Test evaluation with default rubric."""
         runner = MockRunner()
         judge = MockJudge()
-
         with (
             patch("pondera.api.load_case_yaml", return_value=sample_case),
             patch("pondera.api.get_settings"),
@@ -183,17 +176,13 @@ class TestEvaluateCaseAsync:
             await evaluate_case_async(
                 "/fake/path.yaml", runner=runner, judge=judge, default_rubric=sample_rubric
             )
-
-        # Verify choose_rubric was called with both case rubric and default
         mock_choose.assert_called_once_with(sample_case.judge.rubric, sample_rubric)
 
     @pytest.mark.asyncio
     async def test_evaluate_case_async_with_precheck_failures(self, sample_case: CaseSpec) -> None:
-        """Test evaluation with precheck failures."""
         runner = MockRunner()
         judge = MockJudge()
         precheck_failures = ["Missing required keyword"]
-
         with (
             patch("pondera.api.load_case_yaml", return_value=sample_case),
             patch("pondera.api.get_settings"),
@@ -202,16 +191,13 @@ class TestEvaluateCaseAsync:
             patch("pondera.api.compute_pass", return_value=False),
         ):
             result = await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
-
         assert result.precheck_failures == precheck_failures
         assert result.passed is False
 
     @pytest.mark.asyncio
     async def test_evaluate_case_async_timing_measurement(self, sample_case: CaseSpec) -> None:
-        """Test that timing measurements are captured."""
-        runner = MockRunner(delay=0.1)  # 100ms delay
-        judge = MockJudge(delay=0.05)  # 50ms delay
-
+        runner = MockRunner(delay=0.1)
+        judge = MockJudge(delay=0.05)
         with (
             patch("pondera.api.load_case_yaml", return_value=sample_case),
             patch("pondera.api.get_settings"),
@@ -220,23 +206,17 @@ class TestEvaluateCaseAsync:
             patch("pondera.api.compute_pass", return_value=True),
         ):
             result = await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
-
-        # Check timing structure
         assert "runner_s" in result.timings_s
         assert "judge_s" in result.timings_s
         assert "total_s" in result.timings_s
-
-        # Should have reasonable timing values (allowing for test overhead)
-        assert result.timings_s["runner_s"] >= 0.09  # Should be close to 0.1s
-        assert result.timings_s["judge_s"] >= 0.04  # Should be close to 0.05s
-        assert result.timings_s["total_s"] >= 0.14  # Should be sum + overhead
+        assert result.timings_s["runner_s"] >= 0.09
+        assert result.timings_s["judge_s"] >= 0.04
+        assert result.timings_s["total_s"] >= 0.14
 
     @pytest.mark.asyncio
     async def test_evaluate_case_async_passes_runner_parameters(
         self, sample_case: CaseSpec
     ) -> None:
-        """Test that runner receives correct parameters."""
-        # Modify case to have attachments and params
         case_with_params = CaseSpec(
             id="test-case",
             input=CaseInput(
@@ -246,10 +226,8 @@ class TestEvaluateCaseAsync:
             ),
             judge=sample_case.judge,
         )
-
         runner = MockRunner()
         judge = MockJudge()
-
         with (
             patch("pondera.api.load_case_yaml", return_value=case_with_params),
             patch("pondera.api.get_settings"),
@@ -258,8 +236,6 @@ class TestEvaluateCaseAsync:
             patch("pondera.api.compute_pass", return_value=True),
         ):
             await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
-
-        # Verify runner was called with correct parameters
         assert runner.last_call_args is not None
         assert runner.last_call_args["question"] == "What is the capital of France?"
         assert runner.last_call_args["attachments"] == ["map.png", "facts.txt"]
@@ -269,8 +245,6 @@ class TestEvaluateCaseAsync:
     async def test_evaluate_case_async_passes_judge_parameters(
         self, sample_case: CaseSpec, sample_rubric: list[RubricCriterion]
     ) -> None:
-        """Test that judge receives correct parameters."""
-        # Modify case to have judge parameters
         case_with_judge_params = CaseSpec(
             id="test-case",
             input=sample_case.input,
@@ -283,10 +257,8 @@ class TestEvaluateCaseAsync:
                 system_append="Be extra strict",
             ),
         )
-
         runner = MockRunner()
         judge = MockJudge()
-
         with (
             patch("pondera.api.load_case_yaml", return_value=case_with_judge_params),
             patch("pondera.api.get_settings"),
@@ -295,8 +267,6 @@ class TestEvaluateCaseAsync:
             patch("pondera.api.compute_pass", return_value=True),
         ):
             await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
-
-        # Verify judge was called with correct parameters
         assert judge.last_call_args is not None
         assert judge.last_call_args["question"] == "What is the capital of France?"
         assert judge.last_call_args["answer_markdown"] == "Test answer"
@@ -306,11 +276,9 @@ class TestEvaluateCaseAsync:
 
     @pytest.mark.asyncio
     async def test_evaluate_case_async_pathlib_path(self, sample_case: CaseSpec) -> None:
-        """Test evaluation with pathlib.Path input."""
         runner = MockRunner()
         judge = MockJudge()
         case_path = Path("/fake/path.yaml")
-
         with (
             patch("pondera.api.load_case_yaml", return_value=sample_case),
             patch("pondera.api.get_settings"),
@@ -319,28 +287,24 @@ class TestEvaluateCaseAsync:
             patch("pondera.api.compute_pass", return_value=True),
         ):
             result = await evaluate_case_async(case_path, runner=runner, judge=judge)
-
         assert isinstance(result, EvaluationResult)
         assert result.case_id == "test-case"
 
     @pytest.mark.asyncio
     async def test_evaluate_case_async_multi_repetitions(self, sample_case: CaseSpec) -> None:
-        """Test multi-run path returns MultiEvaluationResult with aggregates."""
         multi_case = CaseSpec(
             id=sample_case.id,
             input=sample_case.input,
             judge=sample_case.judge,
             repetitions=3,
         )
-
-        # Create judge with varying scores to test aggregation
         scores = [70, 80, 90]
 
-        class VaryJudge(MockJudge):  # type: ignore
-            def __init__(self):
+        class VaryJudge(MockJudge):
+            def __init__(self) -> None:
                 self.idx = 0
 
-            async def judge(self, **kwargs):  # type: ignore
+            async def judge(self, **kwargs: Any) -> Judgment:
                 sc = scores[self.idx]
                 self.idx += 1
                 return Judgment(
@@ -351,7 +315,7 @@ class TestEvaluateCaseAsync:
                 )
 
         runner = MockRunner()
-        judge = VaryJudge()  # type: ignore
+        judge = VaryJudge()
         with (
             patch("pondera.api.load_case_yaml", return_value=multi_case),
             patch("pondera.api.get_settings"),
@@ -360,7 +324,6 @@ class TestEvaluateCaseAsync:
             patch("pondera.api.compute_pass", return_value=True),
         ):
             result = await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
-
         assert isinstance(result, MultiEvaluationResult)
         assert len(result.evaluations) == 3
         overall_mean = result.aggregates.overall.mean
@@ -369,7 +332,6 @@ class TestEvaluateCaseAsync:
 
     @pytest.mark.asyncio
     async def test_evaluate_case_async_primary_metric_max(self, sample_case: CaseSpec) -> None:
-        """Primary metric selection affects pass outcome (max vs mean)."""
         multi_case = CaseSpec(
             id=sample_case.id,
             input=sample_case.input,
@@ -378,11 +340,11 @@ class TestEvaluateCaseAsync:
         )
         scores = [60, 90]
 
-        class VaryJudge(MockJudge):  # type: ignore
-            def __init__(self):
+        class VaryJudge(MockJudge):
+            def __init__(self) -> None:
                 self.idx = 0
 
-            async def judge(self, **kwargs):  # type: ignore
+            async def judge(self, **kwargs: Any) -> Judgment:
                 sc = scores[self.idx]
                 self.idx += 1
                 return Judgment(
@@ -393,7 +355,7 @@ class TestEvaluateCaseAsync:
                 )
 
         runner = MockRunner()
-        judge = VaryJudge()  # type: ignore
+        judge = VaryJudge()
         with (
             patch("pondera.api.load_case_yaml", return_value=multi_case),
             patch("pondera.api.get_settings"),
@@ -407,10 +369,8 @@ class TestEvaluateCaseAsync:
                 judge=judge,
                 primary_metric=AggregationMetric.max,
             )
-
         assert isinstance(result, MultiEvaluationResult)
-        assert result.passed_primary is True  # max=90 >= 80
-        # mean would be 75 (<80); ensure primary metric stored
+        assert result.passed_primary is True
         assert result.primary_metric == AggregationMetric.max
 
 

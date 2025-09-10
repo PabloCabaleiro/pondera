@@ -95,6 +95,7 @@ class TestJudge:
         result = await judge.judge(
             question="What is 2+2?",
             answer_markdown="2+2 = 4",
+            files=[],
             judge_request="Check if the answer is correct",
         )
 
@@ -134,6 +135,7 @@ class TestJudge:
         result = await judge.judge(
             question="What is 2+2?",
             answer_markdown="2+2 = 4",
+            files=[],
             judge_request="Check if the answer is correct",
         )
 
@@ -160,6 +162,7 @@ class TestJudge:
                 await judge.judge(
                     question="What is 2+2?",
                     answer_markdown="2+2 = 4",
+                    files=[],
                     judge_request="Check if the answer is correct",
                 )
 
@@ -190,6 +193,7 @@ class TestJudge:
         result = await judge.judge(
             question="What is 2+2?",
             answer_markdown="2+2 = 4",
+            files=[],
             judge_request="Check if the answer is correct",
             rubric=custom_rubric,
         )

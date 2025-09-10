@@ -1,5 +1,3 @@
-# src/pondera/utils.py
-
 import re
 from pathlib import Path
 
@@ -9,34 +7,31 @@ from pondera.models.case import CaseSpec
 from pondera.models.rubric import RubricCriterion
 
 
-def load_case_yaml(path: str | Path) -> CaseSpec:
-    p = Path(path)
-    data = yaml.safe_load(p.read_text(encoding="utf-8"))
-    return CaseSpec.model_validate(data)
-
-
 def apply_prejudge_checks(answer_md: str, case: CaseSpec) -> list[str]:
-    """
+    """Run simple textual assertions against the answer.
+
     Returns a list of failure messages; empty list means all checks passed.
     """
     failures: list[str] = []
     exp = case.expect
-
     low = answer_md.lower()
-
     for s in exp.must_contain:
         if s.lower() not in low:
             failures.append(f"must_contain failed: {s!r}")
-
     for s in exp.must_not_contain:
         if s.lower() in low:
             failures.append(f"must_not_contain failed: {s!r}")
-
     for pattern in exp.regex_must_match:
         if not re.search(pattern, answer_md, flags=re.I | re.M):
             failures.append(f"regex_must_match failed: {pattern!r}")
-
     return failures
+
+
+def choose_rubric(
+    case_rubric: list[RubricCriterion] | None, default_rubric: list[RubricCriterion] | None
+) -> list[RubricCriterion] | None:
+    """Return per-case rubric override or fall back to provided default."""
+    return case_rubric or default_rubric
 
 
 def compute_pass(
@@ -47,6 +42,7 @@ def compute_pass(
     criteria_scores: dict[str, int],
     overall_score: int,
 ) -> bool:
+    """Decide overall pass/fail combining pre-checks, overall and per-criterion thresholds."""
     if precheck_failures:
         return False
     if overall_score < overall_threshold:
@@ -57,25 +53,8 @@ def compute_pass(
     return True
 
 
-def choose_rubric(
-    case_rubric: list[RubricCriterion] | None, default_rubric: list[RubricCriterion] | None
-) -> list[RubricCriterion] | None:
-    # Prefer case override; else project/default; else None (judge will have its own default)
-    return case_rubric or default_rubric
-
-
-def rubric_to_markdown(rubric: list[RubricCriterion]) -> str:
-    """
-    Render a rubric into concise markdown bullet points with weights.
-    """
-    return "\n".join(f"- **{c.name}** (w={c.weight:g}): {c.description}" for c in rubric)
-
-
 def default_rubric() -> list[RubricCriterion]:
-    """
-    Default rubric used when none is provided.
-    Kept "private" by convention but importable by implementations.
-    """
+    """Built-in rubric used when none is supplied."""
     return [
         RubricCriterion(
             name="correctness",
@@ -105,9 +84,19 @@ def default_rubric() -> list[RubricCriterion]:
     ]
 
 
+def load_case_yaml(path: str | Path) -> CaseSpec:
+    """Load a YAML case file into a CaseSpec."""
+    p = Path(path)
+    data = yaml.safe_load(p.read_text(encoding="utf-8"))
+    return CaseSpec.model_validate(data)
+
+
+def rubric_to_markdown(rubric: list[RubricCriterion]) -> str:
+    """Render rubric as concise markdown bullet list with weights."""
+    return "\n".join(f"- **{c.name}** (w={c.weight:g}): {c.description}" for c in rubric)
+
+
 def rubric_weight_note(rubric: list[RubricCriterion]) -> str:
-    """
-    Brief instruction for how to handle non-normalized weights.
-    """
+    """Short weight normalization note for inclusion in prompts."""
     tw = sum(c.weight for c in rubric)
     return f"(If weights do not sum to 1, normalize by total weight {tw:g}.)"
