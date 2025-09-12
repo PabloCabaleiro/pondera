@@ -18,3 +18,6 @@ class Judgment(BaseModel):
     criteria_scores: dict[str, int]  # e.g., {"correctness": 85, "completeness": 70, ...}
     issues: list[str] = Field(default_factory=list)
     suggestions: list[str] = Field(default_factory=list)
+    # The full prompt sent to the judge (including any inlined file snippets).
+    # Stored for transparency / reproducibility. Optional to keep model payload minimal.
+    judge_prompt: str = Field(default="")

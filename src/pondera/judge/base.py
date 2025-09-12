@@ -112,6 +112,11 @@ class Judge(JudgeProtocol):
         """.strip()
 
         result, nodes = await run_agent(agent, user_prompt)
+        # Attach the originating prompt so it can be persisted as an artifact.
+        try:
+            result.judge_prompt = user_prompt  # type: ignore[attr-defined]
+        except Exception:
+            pass
         return result
 
     # ── helpers ──────────────────────────────────────────────────────────────

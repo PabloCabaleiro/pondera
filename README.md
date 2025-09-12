@@ -167,12 +167,13 @@ See `docs/TESTING.md` for markers and commands.
 
 - `answer.md` (model's answer)
 - `judgment.json` (judgment schema)
-- `meta.json` (thresholds, timings, pass flag)
+- `judge_prompt.txt` (raw prompt sent to the judge, including any inlined file snippets; only created when non‑empty)
+- `meta.json` (thresholds, timings, pass flag, runner metadata)
 - `summary.md` (human readable summary)
 
 **Multi evaluation**:
 
-- aggregated stats (min / max / mean / median / stdev / variance) per criterion + overall.
+- Aggregated stats (min / max / mean / median / stdev / variance) per criterion + overall inside `multi/aggregates.json` with a human summary.
 
 ## Environment & Settings
 

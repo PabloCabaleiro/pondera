@@ -75,6 +75,11 @@ def write_case_artifacts(artifacts_root: Path | str, res: EvaluationResult) -> P
         encoding="utf-8",
     )
 
+    # judge_prompt.txt (if available)
+    prompt_text = getattr(res.judgment, "judge_prompt", "") or ""
+    if prompt_text:
+        (case_dir / "judge_prompt.txt").write_text(prompt_text, encoding="utf-8")
+
     # meta.json
     meta = {
         "case_id": res.case_id,
@@ -86,6 +91,7 @@ def write_case_artifacts(artifacts_root: Path | str, res: EvaluationResult) -> P
         "runner_metadata": res.run.metadata,
         "artifacts": res.run.artifacts,
         "files": res.run.files,
+        "has_judge_prompt": bool(prompt_text),
     }
     (case_dir / "meta.json").write_text(
         json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8"

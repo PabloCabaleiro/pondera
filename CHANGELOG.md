@@ -4,10 +4,21 @@ The format follows the principles of [Keep a Changelog](https://keepachangelog.c
 
 ## [Unreleased](https://github.com/PabloCabaleiro/pondera/tree/main)
 
-_Nothing yet._
+### Added (Unreleased)
+
+- Persist judge prompt as `judge_prompt.txt` and include `judge_prompt` field in `Judgment` plus `has_judge_prompt` flag in `meta.json`.
+
+### Changed (Unreleased)
+
+- API now always returns `MultiEvaluationResult` (single run wrapped with one `EvaluationResult`) for a stable schema.
+
+### Fixed (Unreleased)
+
+- Updated tests to align with unified return type.
 
 ## [v0.3.0](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.3.0) - 2025-09-10
 
+<!-- markdownlint-disable-next-line MD024 -->
 ### Added
 
 - Protocol to `Judge` (allows custom override implementations)
@@ -28,6 +39,7 @@ _Nothing yet._
 
 ## [v0.2.0](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.2.0) - 2025-09-10
 
+<!-- markdownlint-disable-next-line MD024 -->
 ### Added
 
 - Model agnostic support via PydanticAI in agents module
@@ -36,6 +48,7 @@ _Nothing yet._
 
 ## [v0.1.0](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.1) - 2025-09-08
 
+<!-- markdownlint-disable-next-line MD024 -->
 ### Added
 
 - Schemas: `CaseSpec`, `RubricCriterion` / `Rubric`, `RunResult`, `Judgment`

@@ -269,6 +269,7 @@ class TestWriteCaseArtifacts:
             assert meta_data["overall_threshold"] == 80
             assert meta_data["timings_s"] == {"total_s": 2.0}
             assert meta_data["runner_metadata"] == {"execution_time": 1.5}
+            assert meta_data["has_judge_prompt"] is False
 
             # Verify summary.md
             summary_file = case_dir / "summary.md"
@@ -444,3 +445,37 @@ class TestWriteCaseArtifacts:
             judgment_file = case_dir / "judgment.json"
             judgment_data = json.loads(judgment_file.read_text(encoding="utf-8"))
             assert "café ☕" in judgment_data["reasoning"]
+            # has_judge_prompt should be false (no prompt set in test object)
+            meta_file = case_dir / "meta.json"
+            meta_data = json.loads(meta_file.read_text(encoding="utf-8"))
+            assert meta_data["has_judge_prompt"] is False
+
+    def test_write_artifacts_with_judge_prompt(self) -> None:
+        """Judge prompt is written when present."""
+        case_input = CaseInput(query="Prompt persistence test")
+        case = CaseSpec(id="prompt-test", input=case_input)
+        run = RunResult(question="Prompt persistence test", answer="Answer")
+        judgment = Judgment(
+            score=88,
+            pass_fail=True,
+            reasoning="Good",
+            criteria_scores={"quality": 88},
+            judge_prompt="SYSTEM: ...\nUSER: ...",
+        )
+        evaluation = EvaluationResult(
+            case_id="prompt-test",
+            case=case,
+            run=run,
+            judgment=judgment,
+            overall_threshold=70,
+            passed=True,
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            artifacts_root = Path(temp_dir)
+            case_dir = write_case_artifacts(artifacts_root, evaluation)
+            prompt_file = case_dir / "judge_prompt.txt"
+            assert prompt_file.exists()
+            prompt_text = prompt_file.read_text(encoding="utf-8")
+            assert "SYSTEM:" in prompt_text
+            meta = json.loads((case_dir / "meta.json").read_text(encoding="utf-8"))
+            assert meta["has_judge_prompt"] is True
