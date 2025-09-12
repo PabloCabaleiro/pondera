@@ -11,17 +11,15 @@ class TestEvaluationResult:
     """Tests for EvaluationResult model."""
 
     def test_minimal_evaluation_result(self) -> None:
-        """Test creating evaluation result with minimal required fields."""
         case_input = CaseInput(query="What is 2+2?")
         case = CaseSpec(id="test-case", input=case_input)
         run = RunResult(question="What is 2+2?")
         judgment = Judgment(
             score=85,
-            pass_fail=True,
+            evaluation_passed=True,
             reasoning="Correct answer",
             criteria_scores={"correctness": 85},
         )
-
         evaluation = EvaluationResult(
             case_id="test-case",
             case=case,
@@ -30,7 +28,6 @@ class TestEvaluationResult:
             overall_threshold=70,
             passed=True,
         )
-
         assert evaluation.case_id == "test-case"
         assert evaluation.case.id == "test-case"
         assert evaluation.run.question == "What is 2+2?"
@@ -42,7 +39,6 @@ class TestEvaluationResult:
         assert evaluation.timings_s == {}
 
     def test_full_evaluation_result(self) -> None:
-        """Test creating evaluation result with all fields."""
         case_input = CaseInput(
             query="Analyze this data", attachments=["data.csv"], params={"format": "json"}
         )
@@ -55,13 +51,12 @@ class TestEvaluationResult:
         )
         judgment = Judgment(
             score=75,
-            pass_fail=True,
+            evaluation_passed=True,
             reasoning="Good analysis with minor issues",
             criteria_scores={"correctness": 80, "completeness": 70},
             issues=["Missing trend explanation"],
             suggestions=["Add more details about trends"],
         )
-
         evaluation = EvaluationResult(
             case_id="analysis-case",
             case=case,
@@ -73,7 +68,6 @@ class TestEvaluationResult:
             passed=True,
             timings_s={"runner": 5.2, "judge": 2.1, "precheck": 0.3, "total": 7.6},
         )
-
         assert evaluation.case_id == "analysis-case"
         assert evaluation.case.input.query == "Analyze this data"
         assert evaluation.run.answer.startswith("# Analysis")
@@ -86,7 +80,6 @@ class TestEvaluationResult:
         assert evaluation.timings_s["total"] == 7.6
 
     def test_failed_evaluation(self) -> None:
-        """Test evaluation result for a failed case."""
         case_input = CaseInput(query="What is the capital of Mars?")
         case = CaseSpec(id="impossible-case", input=case_input)
         run = RunResult(
@@ -95,13 +88,12 @@ class TestEvaluationResult:
         )
         judgment = Judgment(
             score=45,
-            pass_fail=False,
+            evaluation_passed=False,
             reasoning="Factually incorrect assumption in question",
             criteria_scores={"correctness": 50, "completeness": 40},
             issues=["Question is based on false premise"],
             suggestions=["Clarify that Mars has no cities"],
         )
-
         evaluation = EvaluationResult(
             case_id="impossible-case",
             case=case,
@@ -111,20 +103,17 @@ class TestEvaluationResult:
             overall_threshold=70,
             passed=False,
         )
-
         assert evaluation.case_id == "impossible-case"
         assert evaluation.judgment.score == 45
-        assert evaluation.judgment.pass_fail is False
+        assert evaluation.judgment.evaluation_passed is False
         assert evaluation.precheck_failures == ["Answer too short"]
         assert evaluation.passed is False
 
     def test_precheck_failures_list(self) -> None:
-        """Test that precheck failures can contain multiple items."""
         case_input = CaseInput(query="Test question")
         case = CaseSpec(id="test", input=case_input)
         run = RunResult(question="Test question")
-        judgment = Judgment(score=60, pass_fail=True, reasoning="OK", criteria_scores={})
-
+        judgment = Judgment(score=60, evaluation_passed=True, reasoning="OK", criteria_scores={})
         evaluation = EvaluationResult(
             case_id="test",
             case=case,
@@ -138,19 +127,18 @@ class TestEvaluationResult:
             overall_threshold=50,
             passed=False,
         )
-
         assert len(evaluation.precheck_failures) == 3
         assert "Missing keyword 'analysis'" in evaluation.precheck_failures
         assert "Contains forbidden word 'error'" in evaluation.precheck_failures
         assert "Regex pattern not matched" in evaluation.precheck_failures
 
     def test_complex_timings(self) -> None:
-        """Test that timings can contain various timing measurements."""
         case_input = CaseInput(query="Complex task")
         case = CaseSpec(id="complex", input=case_input)
         run = RunResult(question="Complex task")
-        judgment = Judgment(score=90, pass_fail=True, reasoning="Excellent", criteria_scores={})
-
+        judgment = Judgment(
+            score=90, evaluation_passed=True, reasoning="Excellent", criteria_scores={}
+        )
         evaluation = EvaluationResult(
             case_id="complex",
             case=case,
@@ -169,26 +157,20 @@ class TestEvaluationResult:
                 "total": 14.85,
             },
         )
-
         assert evaluation.timings_s["runner_execution"] == 10.2
         assert evaluation.timings_s["judge_execution"] == 3.5
         assert evaluation.timings_s["total"] == 14.85
 
     def test_missing_required_fields(self) -> None:
-        """Test that missing required fields raise ValidationError."""
         with pytest.raises(ValidationError) as exc_info:
-            EvaluationResult()  # type: ignore
-
-        error_str = str(exc_info.value)
-        assert "Field required" in error_str
+            EvaluationResult()  # intentional: trigger validation error with no fields
+        assert "Field required" in str(exc_info.value)
 
     def test_extra_fields_forbidden(self) -> None:
-        """Test that extra fields are forbidden."""
         case_input = CaseInput(query="test")
         case = CaseSpec(id="test", input=case_input)
         run = RunResult(question="test")
-        judgment = Judgment(score=80, pass_fail=True, reasoning="test", criteria_scores={})
-
+        judgment = Judgment(score=80, evaluation_passed=True, reasoning="test", criteria_scores={})
         with pytest.raises(ValidationError) as exc_info:
             EvaluationResult(
                 case_id="test",
@@ -197,7 +179,6 @@ class TestEvaluationResult:
                 judgment=judgment,
                 overall_threshold=70,
                 passed=True,
-                extra_field="not allowed",  # type: ignore
+                extra_field="not allowed",  # invalid extra field
             )
-
         assert "Extra inputs are not permitted" in str(exc_info.value)

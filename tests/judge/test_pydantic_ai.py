@@ -48,7 +48,10 @@ class TestJudge:
         mock_get_agent.return_value = mock_agent
 
         expected_judgment = Judgment(
-            score=85, pass_fail=True, reasoning="Good answer", criteria_scores={"correctness": 85}
+            score=85,
+            evaluation_passed=True,
+            reasoning="Good answer",
+            criteria_scores={"correctness": 85},
         )
         mock_run_agent.return_value = (expected_judgment, [])
 
@@ -65,7 +68,7 @@ class TestJudge:
         # Verify result
         assert isinstance(result, Judgment)
         assert result.score == 85
-        assert result.pass_fail is True
+        assert result.evaluation_passed is True
         assert result.reasoning == "Good answer"
 
         # Verify mocks were called
@@ -80,7 +83,10 @@ class TestJudge:
         mock_get_agent.return_value = mock_agent
 
         expected_judgment = Judgment(
-            score=90, pass_fail=True, reasoning="Excellent", criteria_scores={"correctness": 90}
+            score=90,
+            evaluation_passed=True,
+            reasoning="Excellent",
+            criteria_scores={"correctness": 90},
         )
         mock_run_agent.return_value = (expected_judgment, [])
 
@@ -127,7 +133,7 @@ class TestJudge:
         mock_get_agent.return_value = mock_agent
 
         expected_judgment = Judgment(
-            score=75, pass_fail=True, reasoning="Good", criteria_scores={"accuracy": 75}
+            score=75, evaluation_passed=True, reasoning="Good", criteria_scores={"accuracy": 75}
         )
         mock_run_agent.return_value = (expected_judgment, [])
 

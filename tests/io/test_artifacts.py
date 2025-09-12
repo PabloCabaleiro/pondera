@@ -76,7 +76,7 @@ class TestSummaryMdFunction:
         run = RunResult(question="What is 2+2?", answer="2+2 equals 4")
         judgment = Judgment(
             score=90,
-            pass_fail=True,
+            evaluation_passed=True,
             reasoning="Correct answer",
             criteria_scores={"correctness": 90, "clarity": 85},
         )
@@ -106,7 +106,7 @@ class TestSummaryMdFunction:
         run = RunResult(question="Complex question", answer="Incomplete answer")
         judgment = Judgment(
             score=40,
-            pass_fail=False,
+            evaluation_passed=False,
             reasoning="Answer is incomplete",
             criteria_scores={"correctness": 50, "completeness": 30},
             issues=["Missing key information", "Unclear explanation"],
@@ -146,8 +146,7 @@ class TestSummaryMdFunction:
         case_input = CaseInput(query="Timed task")
         case = CaseSpec(id="timed-case", input=case_input)
         run = RunResult(question="Timed task")
-        judgment = Judgment(score=80, pass_fail=True, reasoning="Good", criteria_scores={})
-
+        judgment = Judgment(score=80, evaluation_passed=True, reasoning="Good", criteria_scores={})
         evaluation = EvaluationResult(
             case_id="timed-case",
             case=case,
@@ -157,9 +156,7 @@ class TestSummaryMdFunction:
             passed=True,
             timings_s={"runner_s": 5.25, "judge_s": 2.10, "total_s": 7.35},
         )
-
         summary = _summary_md(evaluation)
-
         assert "**Timings**: runner=5.25s, judge=2.10s, total=7.35s" in summary
 
     def test_summary_no_criteria_scores(self) -> None:
@@ -167,8 +164,7 @@ class TestSummaryMdFunction:
         case_input = CaseInput(query="Simple task")
         case = CaseSpec(id="no-criteria", input=case_input)
         run = RunResult(question="Simple task")
-        judgment = Judgment(score=75, pass_fail=True, reasoning="OK", criteria_scores={})
-
+        judgment = Judgment(score=75, evaluation_passed=True, reasoning="OK", criteria_scores={})
         evaluation = EvaluationResult(
             case_id="no-criteria",
             case=case,
@@ -177,9 +173,7 @@ class TestSummaryMdFunction:
             overall_threshold=70,
             passed=True,
         )
-
         summary = _summary_md(evaluation)
-
         assert "## Criterion scores" in summary
         # Should not have any bullet points for criteria since dict is empty
 
@@ -189,7 +183,7 @@ class TestSummaryMdFunction:
         case = CaseSpec(id="partial-timings", input=case_input)
         run = RunResult(question="Partial timings")
         judgment = Judgment(
-            score=85, pass_fail=True, reasoning="Good", criteria_scores={"quality": 85}
+            score=85, evaluation_passed=True, reasoning="Good", criteria_scores={"quality": 85}
         )
 
         evaluation = EvaluationResult(
@@ -221,7 +215,7 @@ class TestWriteCaseArtifacts:
         )
         judgment = Judgment(
             score=95,
-            pass_fail=True,
+            evaluation_passed=True,
             reasoning="Perfect answer",
             criteria_scores={"correctness": 95},
         )
@@ -256,7 +250,7 @@ class TestWriteCaseArtifacts:
             assert judgment_file.exists()
             judgment_data = json.loads(judgment_file.read_text(encoding="utf-8"))
             assert judgment_data["score"] == 95
-            assert judgment_data["pass_fail"] is True
+            assert judgment_data["evaluation_passed"] is True
             assert judgment_data["reasoning"] == "Perfect answer"
             assert judgment_data["criteria_scores"] == {"correctness": 95}
 
@@ -283,7 +277,7 @@ class TestWriteCaseArtifacts:
         case_input = CaseInput(query="Complex test")
         case = CaseSpec(id="Complex Test Case #1 (Special Characters!)", input=case_input)
         run = RunResult(question="Complex test")
-        judgment = Judgment(score=80, pass_fail=True, reasoning="Good", criteria_scores={})
+        judgment = Judgment(score=80, evaluation_passed=True, reasoning="Good", criteria_scores={})
 
         evaluation = EvaluationResult(
             case_id="Complex Test Case #1 (Special Characters!)",
@@ -307,7 +301,7 @@ class TestWriteCaseArtifacts:
         case_input = CaseInput(query="String path test")
         case = CaseSpec(id="string-path", input=case_input)
         run = RunResult(question="String path test")
-        judgment = Judgment(score=70, pass_fail=True, reasoning="OK", criteria_scores={})
+        judgment = Judgment(score=70, evaluation_passed=True, reasoning="OK", criteria_scores={})
 
         evaluation = EvaluationResult(
             case_id="string-path",
@@ -335,7 +329,7 @@ class TestWriteCaseArtifacts:
         case = CaseSpec(id="empty-answer", input=case_input)
         run = RunResult(question="Empty answer test", answer="")
         judgment = Judgment(
-            score=0, pass_fail=False, reasoning="No answer provided", criteria_scores={}
+            score=0, evaluation_passed=False, reasoning="No answer provided", criteria_scores={}
         )
 
         evaluation = EvaluationResult(
@@ -361,7 +355,9 @@ class TestWriteCaseArtifacts:
         case_input = CaseInput(query="None answer test")
         case = CaseSpec(id="none-answer", input=case_input)
         run = RunResult(question="None answer test")  # answer defaults to ""
-        judgment = Judgment(score=0, pass_fail=False, reasoning="No answer", criteria_scores={})
+        judgment = Judgment(
+            score=0, evaluation_passed=False, reasoning="No answer", criteria_scores={}
+        )
 
         evaluation = EvaluationResult(
             case_id="none-answer",
@@ -386,7 +382,7 @@ class TestWriteCaseArtifacts:
         case_input = CaseInput(query="Nested path test")
         case = CaseSpec(id="nested-test", input=case_input)
         run = RunResult(question="Nested path test")
-        judgment = Judgment(score=75, pass_fail=True, reasoning="Good", criteria_scores={})
+        judgment = Judgment(score=75, evaluation_passed=True, reasoning="Good", criteria_scores={})
 
         evaluation = EvaluationResult(
             case_id="nested-test",
@@ -416,7 +412,7 @@ class TestWriteCaseArtifacts:
         )
         judgment = Judgment(
             score=85,
-            pass_fail=True,
+            evaluation_passed=True,
             reasoning="Unicode content handled well: café ☕",
             criteria_scores={"unicode_handling": 90},
         )
@@ -457,7 +453,7 @@ class TestWriteCaseArtifacts:
         run = RunResult(question="Prompt persistence test", answer="Answer")
         judgment = Judgment(
             score=88,
-            pass_fail=True,
+            evaluation_passed=True,
             reasoning="Good",
             criteria_scores={"quality": 88},
             judge_prompt="SYSTEM: ...\nUSER: ...",

@@ -13,11 +13,23 @@ class Judgment(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     score: int = Field(..., ge=0, le=100)
-    pass_fail: bool
+    evaluation_passed: bool
     reasoning: str
-    criteria_scores: dict[str, int]  # e.g., {"correctness": 85, "completeness": 70, ...}
+    criteria_scores: dict[str, int]
     issues: list[str] = Field(default_factory=list)
     suggestions: list[str] = Field(default_factory=list)
-    # The full prompt sent to the judge (including any inlined file snippets).
-    # Stored for transparency / reproducibility. Optional to keep model payload minimal.
     judge_prompt: str = Field(default="")
+
+    def __str__(self) -> str:  # pragma: no cover - trivial
+        crit = sorted(self.criteria_scores.items())
+        return (
+            f"Judgment(score={self.score}, passed={self.evaluation_passed}, criteria={crit}, "
+            f"issues={len(self.issues)}, suggestions={len(self.suggestions)})"
+        )
+
+    def __repr__(self) -> str:  # pragma: no cover - trivial
+        reasoning_short = self.reasoning.strip().splitlines()[0][:60] if self.reasoning else ""
+        return (
+            f"Judgment(score={self.score}, evaluation_passed={self.evaluation_passed}, "
+            f"criteria_scores={self.criteria_scores}, reasoning_snippet={reasoning_short!r})"
+        )

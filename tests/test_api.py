@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from pondera.api import evaluate_case_async, evaluate_case
+from pondera.errors import ValidationError
 from pondera.models.case import CaseSpec, CaseInput, CaseJudge
 from pondera.models.judgment import Judgment
 from pondera.models.run import RunResult
@@ -52,7 +53,7 @@ class MockJudge:
     def __init__(self, judgment: Judgment | None = None, delay: float = 0.0):
         self.judgment = judgment or Judgment(
             score=85,  # Integer, not float
-            pass_fail=True,  # Required field
+            evaluation_passed=True,  # Required field
             reasoning="Good answer",
             criteria_scores={"accuracy": 90, "clarity": 80},  # Integer scores
         )
@@ -314,7 +315,7 @@ class TestEvaluateCaseAsync:
                 self.idx += 1
                 return Judgment(
                     score=sc,
-                    pass_fail=True,
+                    evaluation_passed=True,
                     reasoning="ok",
                     criteria_scores={"accuracy": sc, "clarity": sc - 5},
                 )
@@ -354,7 +355,7 @@ class TestEvaluateCaseAsync:
                 self.idx += 1
                 return Judgment(
                     score=sc,
-                    pass_fail=True,
+                    evaluation_passed=True,
                     reasoning="ok",
                     criteria_scores={"accuracy": sc},
                 )
@@ -423,7 +424,7 @@ class TestEvaluateCase:
         judge = MockJudge(
             judgment=Judgment(
                 score=80,
-                pass_fail=True,
+                evaluation_passed=True,
                 reasoning="ok",
                 criteria_scores={"accuracy": 80, "clarity": 75},
             )
@@ -434,7 +435,10 @@ class TestEvaluateCase:
             patch("pondera.api.apply_prejudge_checks", return_value=[]),
             patch("pondera.api.choose_rubric", return_value=sample_rubric),
         ):
-            with pytest.raises(ValueError, match="Invalid per_criterion_thresholds keys"):
+            # Fail-fast now surfaces as structured ValidationError from compute_pass
+            with pytest.raises(
+                ValidationError, match="Missing criterion score for threshold key 'nonexistent'"
+            ):
                 await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
 
     def test_evaluate_case_default_judge(self, sample_case: CaseSpec) -> None:
@@ -454,7 +458,7 @@ class TestEvaluateCase:
             async def _mock_judge(**kwargs):  # type: ignore
                 return Judgment(
                     score=90,
-                    pass_fail=True,
+                    evaluation_passed=True,
                     reasoning="ok",
                     criteria_scores={"accuracy": 90},
                     issues=[],
@@ -555,7 +559,7 @@ class TestApiIntegration:
         # Create judge that returns specific judgment
         judgment = Judgment(
             score=92,  # Integer
-            pass_fail=True,  # Required field
+            evaluation_passed=True,  # Required field
             reasoning="Accurate and concise answer.",
             criteria_scores={"accuracy": 100, "clarity": 85},  # Integer scores
         )

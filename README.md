@@ -87,7 +87,7 @@ class ConstantJudge(JudgeProtocol):
           rubric=None, system_append: str = "") -> Judgment:
     return Judgment(
       score=100,
-      pass_fail=True,
+      evaluation_passed=True,
       reasoning="Always passes (demo)",
       criteria_scores={c.name: 100 for c in (rubric or [])} if rubric else {"overall": 100},
       issues=[],

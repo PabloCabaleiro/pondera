@@ -53,7 +53,7 @@ class SlowJudge(JudgeProtocol):
         await asyncio.sleep(2)  # longer than timeout
         return Judgment(
             score=0,
-            pass_fail=False,
+            evaluation_passed=False,
             reasoning="timeout placeholder",
             criteria_scores={"overall": 0},
             issues=["Should have timed out"],

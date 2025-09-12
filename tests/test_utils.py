@@ -16,6 +16,7 @@ from pondera.utils import (
 )
 from pondera.models.case import CaseSpec, CaseInput, CaseJudge, CaseExpectations
 from pondera.models.rubric import RubricCriterion
+from pondera.errors import ValidationError
 
 
 class TestLoadCaseYaml:
@@ -386,17 +387,15 @@ class TestComputePass:
         assert result is True
 
     def test_handles_missing_criterion_score(self) -> None:
-        """Test handling when a criterion score is missing (defaults to 0)."""
-        result = compute_pass(
-            precheck_failures=[],
-            overall_threshold=70,
-            per_criterion_thresholds={"accuracy": 80, "missing_criterion": 50},
-            criteria_scores={"accuracy": 85},  # missing_criterion not provided
-            overall_score=75,
-        )
-
-        # Should fail because missing_criterion defaults to 0, which is < 50
-        assert result is False
+        """Missing criterion with threshold should raise ValidationError (fail-fast)."""
+        with pytest.raises(ValidationError):
+            compute_pass(
+                precheck_failures=[],
+                overall_threshold=70,
+                per_criterion_thresholds={"accuracy": 80, "missing_criterion": 50},
+                criteria_scores={"accuracy": 85},  # missing_criterion not provided
+                overall_score=75,
+            )
 
     def test_passes_at_exact_thresholds(self) -> None:
         """Test that result passes when scores exactly meet thresholds."""

@@ -22,3 +22,18 @@ class RunResult(BaseModel):
     files: list[str] = Field(default_factory=list)
     # any useful metadata (steps, timings, costs, tool usage, etc.)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    def __str__(self) -> str:  # pragma: no cover - trivial
+        meta_keys = sorted(self.metadata.keys())
+        return (
+            f"RunResult(len(answer)={len(self.answer)}, artifacts={len(self.artifacts)}, "
+            f"files={len(self.files)}, metadata_keys={meta_keys})"
+        )
+
+    def __repr__(self) -> str:  # pragma: no cover - trivial
+        return (
+            "RunResult(question="
+            + repr(self.question[:40] + ("…" if len(self.question) > 40 else ""))
+            + f", answer_len={len(self.answer)}, artifacts={self.artifacts}, files={self.files}, "
+            f"metadata_keys={list(self.metadata.keys())})"
+        )

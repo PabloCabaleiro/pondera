@@ -6,6 +6,11 @@ The format follows the principles of [Keep a Changelog](https://keepachangelog.c
 
 ### Added (Unreleased)
 
+## [v0.4.0](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.4.0) - 2025-09-12
+
+<!-- markdownlint-disable-next-line MD024 -->
+### Added (Unreleased)
+
 - Persist judge prompt as `judge_prompt.txt` and include `judge_prompt` field in `Judgment` plus `has_judge_prompt` flag in `meta.json`.
 - Enforce per-case `timeout_s` via `asyncio.wait_for` around runner and judge execution (raises `asyncio.TimeoutError`).
 - Tests for runner and judge timeout behavior.
@@ -19,11 +24,14 @@ The format follows the principles of [Keep a Changelog](https://keepachangelog.c
 - Unified pass/fail logic: removed duplicated threshold code by reusing `compute_pass` for multi-evaluation aggregation.
 - Removed ad-hoc runtime threshold key validation function in favor of model-level validators.
 - Timeout raising now uses project `TimeoutError` (still an `asyncio.TimeoutError` subclass) for consistent catching.
+- Fail-fast on missing criterion scores when per-criterion thresholds provided (no silent 0 default); `compute_pass` now raises `ValidationError`.
+- BREAKING: normalized naming: removed `Judgment.pass_fail`/dual serialization; single boolean field `evaluation_passed` everywhere (tests & artifacts updated, no backward alias).
 
 ### Fixed (Unreleased)
 
 - Updated tests to align with unified return type.
 - Consistent pass/fail evaluation across single and multi-run cases (previous divergence removed).
+- Test expectations updated to reflect new fail-fast validation for missing per-criterion threshold keys.
 
 ## [v0.3.0](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.3.0) - 2025-09-10
 

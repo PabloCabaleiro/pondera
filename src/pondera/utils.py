@@ -43,13 +43,22 @@ def compute_pass(
     criteria_scores: dict[str, int],
     overall_score: int,
 ) -> bool:
-    """Decide overall pass/fail combining pre-checks, overall and per-criterion thresholds."""
+    """Decide overall pass/fail combining pre-checks, overall and per-criterion thresholds.
+
+    Fail-fast if a per-criterion threshold key is absent from the provided criteria_scores
+    instead of silently defaulting its score to 0. This prevents ambiguous failures where
+    a missing score could masquerade as an earned zero.
+    """
     if precheck_failures:
         return False
     if overall_score < overall_threshold:
         return False
     for k, th in (per_criterion_thresholds or {}).items():
-        if criteria_scores.get(k, 0) < th:
+        if k not in criteria_scores:
+            raise ValidationError(
+                f"Missing criterion score for threshold key '{k}' (fail-fast instead of defaulting to 0)"
+            )
+        if criteria_scores[k] < th:
             return False
     return True
 

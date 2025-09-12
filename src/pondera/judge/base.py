@@ -10,13 +10,7 @@ from pondera.errors import JudgeError
 
 
 class Judge(JudgeProtocol):
-    """
-    LLM-as-a-judge built on get_agent and run_agent, returning a strict `Judgment`.
-
-    - Model-agnostic: pass any backend id supported by your pydantic_ai setup.
-    - Defaults are pulled from Pondera settings.
-    - No MCP in MVP (can be added later).
-    """
+    """LLM-as-a-Judge returning a strict `Judgment`."""
 
     def __init__(
         self,
@@ -24,9 +18,10 @@ class Judge(JudgeProtocol):
         model: str | None = None,
         rubric: list[RubricCriterion] | None = None,
         system_append: str = "",
-    ):
+    ) -> None:
         self._default_rubric = rubric or default_rubric()
         self._system_append = system_append
+        self._model = model
 
     async def judge(
         self,
@@ -43,24 +38,19 @@ class Judge(JudgeProtocol):
             raise JudgeError("No rubric provided or configured.")
 
         use_system = self._system_prompt(
-            rb,
-            self._system_append + (("\n" + system_append) if system_append else ""),
+            rb, self._system_append + ("\n" + system_append if system_append else "")
         )
-
-        # Create agent with the specified model and system prompt
         agent = get_agent(system_prompt=use_system, output_type=Judgment)
 
         files_section = "\n".join(f"- {p}" for p in (files or [])) or "(none)"
 
-        # Inline small text file contents with conservative limits
         inline_snippets: list[str] = []
         MAX_FILES = 5
         MAX_BYTES_PER_FILE = 20_000  # 20 KB per file
-        total = 0
         for p in (files or [])[:MAX_FILES]:
             try:
                 fp = Path(p)
-                if not fp.exists() or not fp.is_file():  # skip missing
+                if not fp.exists() or not fp.is_file():
                     inline_snippets.append(f"--- {p} (missing) ---")
                     continue
                 size = fp.stat().st_size
@@ -70,14 +60,13 @@ class Judge(JudgeProtocol):
                     )
                     continue
                 raw = fp.read_bytes()
-                if b"\x00" in raw:  # naive binary check
+                if b"\x00" in raw:
                     inline_snippets.append(f"--- {p} (skipped: binary) ---")
                     continue
                 text = raw.decode("utf-8", errors="replace")
                 snippet = text[:MAX_BYTES_PER_FILE]
-                total += len(snippet)
                 inline_snippets.append(f"--- {p} ({len(snippet)} bytes) ---\n{snippet}".rstrip())
-            except Exception as e:  # never break judging
+            except Exception as e:  # pragma: no cover
                 inline_snippets.append(f"--- {p} (error reading: {e}) ---")
 
         files_content_block = (
@@ -108,15 +97,12 @@ class Judge(JudgeProtocol):
             Return ONLY a valid object for the `Judgment` schema.
         """.strip()
 
-        result, nodes = await run_agent(agent, user_prompt)
-        # Attach the originating prompt so it can be persisted as an artifact.
+        result, _nodes = await run_agent(agent, user_prompt)
         try:
-            result.judge_prompt = user_prompt  # attribute defined in Judgment schema
-        except Exception:  # pragma: no cover - defensive
+            result.judge_prompt = user_prompt
+        except Exception:  # pragma: no cover
             pass
         return result
-
-    # ── helpers ──────────────────────────────────────────────────────────────
 
     def _system_prompt(self, rubric: list[RubricCriterion], extra: str) -> str:
         rubric_md = rubric_to_markdown(rubric)
@@ -125,7 +111,7 @@ class Judge(JudgeProtocol):
 
             {{
             "score": 0-100,
-            "pass_fail": true/false,
+            "evaluation_passed": true/false,
             "reasoning": "...",
             "criteria_scores": {{ "<criterion>": 0-100, ... }},
             "issues": ["..."],

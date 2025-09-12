@@ -35,7 +35,7 @@ class TestAPIIntegration:
 
             mock_judgment = Judgment(
                 score=90.0,
-                pass_fail=True,
+                evaluation_passed=True,
                 reasoning="Correct answer about Paris",
                 criteria_scores={"accuracy": 90.0},
                 issues=[],
@@ -73,7 +73,7 @@ class TestAPIIntegration:
 
             mock_judgment = Judgment(
                 score=90.0,
-                pass_fail=True,
+                evaluation_passed=True,
                 reasoning="Correct answer about Paris",
                 criteria_scores={"accuracy": 90.0},
                 issues=[],
@@ -108,7 +108,7 @@ class TestAPIIntegration:
 
             mock_judgment = Judgment(
                 score=95.0,
-                pass_fail=True,
+                evaluation_passed=True,
                 reasoning="Correct mathematical answer",
                 criteria_scores={"accuracy": 95.0},
                 issues=[],
@@ -145,7 +145,7 @@ class TestAPIIntegration:
 
             mock_judgment = Judgment(
                 score=85.0,
-                pass_fail=True,
+                evaluation_passed=True,
                 reasoning="Good explanation of photosynthesis",
                 criteria_scores={"accuracy": 90.0, "completeness": 80.0},
                 issues=[],
@@ -181,7 +181,7 @@ class TestAPIIntegration:
 
             mock_judgment = Judgment(
                 score=75.0,
-                pass_fail=True,
+                evaluation_passed=True,
                 reasoning="Simple but correct answer",
                 criteria_scores={"accuracy": 75.0},
                 issues=[],
@@ -221,7 +221,7 @@ class TestAPIIntegration:
 
             mock_judgment = Judgment(
                 score=20.0,
-                pass_fail=False,
+                evaluation_passed=False,
                 reasoning="Incorrect mathematical answer",
                 criteria_scores={"accuracy": 20.0},
                 issues=["Wrong calculation"],

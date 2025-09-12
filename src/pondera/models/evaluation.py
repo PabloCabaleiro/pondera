@@ -21,7 +21,7 @@ class EvaluationResult(BaseModel):
     # Thresholds used at evaluation time
     overall_threshold: int
     per_criterion_thresholds: dict[str, int] = Field(default_factory=dict)
-    # Final status computed by Pondera (independent of judgment.pass_fail)
+    # Final status computed by Pondera (independent of judgment.evaluation_passed)
     passed: bool
     # Optional timings in seconds
     timings_s: dict[str, float] = Field(default_factory=dict)
@@ -39,3 +39,16 @@ class EvaluationResult(BaseModel):
                     + ")"
                 )
         return self
+
+    def __str__(self) -> str:  # pragma: no cover - trivial
+        return (
+            f"EvaluationResult(case_id={self.case_id}, passed={self.passed}, "
+            f"overall_threshold={self.overall_threshold}, precheck_failures={len(self.precheck_failures)})"
+        )
+
+    def __repr__(self) -> str:  # pragma: no cover - trivial
+        return (
+            f"EvaluationResult(case_id={self.case_id!r}, passed={self.passed}, "
+            f"score={self.judgment.score}, criteria={self.judgment.criteria_scores}, "
+            f"failures={self.precheck_failures})"
+        )
