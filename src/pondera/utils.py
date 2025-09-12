@@ -4,6 +4,7 @@ from pathlib import Path
 import yaml
 
 from pondera.models.case import CaseSpec
+from pondera.errors import ValidationError
 from pondera.models.rubric import RubricCriterion
 
 
@@ -85,10 +86,13 @@ def default_rubric() -> list[RubricCriterion]:
 
 
 def load_case_yaml(path: str | Path) -> CaseSpec:
-    """Load a YAML case file into a CaseSpec."""
+    """Load a YAML case file into a CaseSpec, raising ValidationError on schema issues."""
     p = Path(path)
     data = yaml.safe_load(p.read_text(encoding="utf-8"))
-    return CaseSpec.model_validate(data)
+    try:
+        return CaseSpec.model_validate(data)
+    except Exception as ex:  # pydantic.ValidationError or other
+        raise ValidationError(f"Invalid CaseSpec YAML '{path}': {ex}") from ex
 
 
 def rubric_to_markdown(rubric: list[RubricCriterion]) -> str:

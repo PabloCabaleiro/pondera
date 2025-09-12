@@ -6,10 +6,7 @@ from pondera.models.judgment import Judgment
 from pondera.utils import rubric_to_markdown, rubric_weight_note, default_rubric
 from pondera.judge.pydantic_ai import get_agent, run_agent
 from pondera.judge.protocol import JudgeProtocol
-
-
-class JudgeError(RuntimeError):
-    """Raised for judge configuration or runtime errors."""
+from pondera.errors import JudgeError
 
 
 class Judge(JudgeProtocol):
@@ -114,8 +111,8 @@ class Judge(JudgeProtocol):
         result, nodes = await run_agent(agent, user_prompt)
         # Attach the originating prompt so it can be persisted as an artifact.
         try:
-            result.judge_prompt = user_prompt  # type: ignore[attr-defined]
-        except Exception:
+            result.judge_prompt = user_prompt  # attribute defined in Judgment schema
+        except Exception:  # pragma: no cover - defensive
             pass
         return result
 

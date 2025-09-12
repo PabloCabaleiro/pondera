@@ -6,6 +6,7 @@ from typing import Any
 from pondera.judge.protocol import JudgeProtocol
 from pondera.judge import Judge
 from pondera.runner.base import Runner, ProgressCallback, emit_progress
+from pondera.errors import TimeoutError, RunnerError, JudgeError
 from pondera.models.evaluation import EvaluationResult
 from pondera.models.rubric import RubricCriterion
 from pondera.models.multi_evaluation import (
@@ -19,6 +20,9 @@ from pondera.settings import get_settings
 from pondera.utils import load_case_yaml, apply_prejudge_checks, compute_pass, choose_rubric
 from pondera.io.artifacts import write_case_artifacts
 from pondera.io.artifacts import write_multi_evaluation_artifacts  # type: ignore
+import logging
+
+log = logging.getLogger("pondera")
 
 
 async def _execute_case_once(
@@ -31,18 +35,29 @@ async def _execute_case_once(
 ) -> EvaluationResult:
     """Internal single execution helper (no YAML reload)."""
     await emit_progress(progress, f"pondera: running case '{case.id}'…")
+    log.debug("case %s: starting runner", case.id)
     t0 = time.perf_counter()
     run_res = await _run_case(case, runner, progress)
     t1 = time.perf_counter()
     failures = apply_prejudge_checks(run_res.answer or "", case)
     use_rubric = choose_rubric(case.judge.rubric, default_rubric)
     await emit_progress(progress, "pondera: judging answer…")
+    log.debug("case %s: starting judge", case.id)
     t2 = time.perf_counter()
     the_judge: JudgeProtocol = judge or Judge()
     judgment = await _judge_case(case, run_res, the_judge, use_rubric)
     t3 = time.perf_counter()
     timings = _get_timings(t0, t1, t2, t3)
     passed = _compute_pass(case, failures, judgment)
+    log.info(
+        "case %s completed: passed=%s score=%s failures=%d runner_s=%.3f judge_s=%.3f",
+        case.id,
+        passed,
+        getattr(judgment, "score", None),
+        len(failures),
+        timings["runner_s"],
+        timings["judge_s"],
+    )
     return EvaluationResult(
         case_id=case.id,
         case=case,
@@ -106,6 +121,15 @@ async def evaluate_case_async(
             write_case_artifacts(artifacts_root, evaluations[0])
         else:
             write_multi_evaluation_artifacts(artifacts_root, multi)
+    overall_repr = multi.aggregates.overall.model_dump()
+    log.debug(
+        "case %s repetitions=%d primary_metric=%s overall=%s passed=%s",
+        case.id,
+        reps,
+        primary_metric.value,
+        overall_repr,
+        multi.passed,
+    )
     return multi
 
 
@@ -122,9 +146,11 @@ async def _run_case(case: "CaseSpec", runner: Runner, progress: ProgressCallback
             timeout=case.timeout_s,
         )
     except asyncio.TimeoutError as ex:  # pragma: no cover - message path
-        raise asyncio.TimeoutError(
-            f"runner timed out after {case.timeout_s}s for case '{case.id}'"
-        ) from ex
+        raise TimeoutError(f"runner timed out after {case.timeout_s}s for case '{case.id}'") from ex
+    except RunnerError:
+        raise
+    except Exception as ex:
+        raise RunnerError(f"runner raised unexpected exception: {ex}") from ex
 
 
 async def _judge_case(
@@ -144,9 +170,11 @@ async def _judge_case(
             timeout=case.timeout_s,
         )
     except asyncio.TimeoutError as ex:  # pragma: no cover - message path
-        raise asyncio.TimeoutError(
-            f"judge timed out after {case.timeout_s}s for case '{case.id}'"
-        ) from ex
+        raise TimeoutError(f"judge timed out after {case.timeout_s}s for case '{case.id}'") from ex
+    except JudgeError:
+        raise
+    except Exception as ex:
+        raise JudgeError(f"judge raised unexpected exception: {ex}") from ex
 
 
 def _get_timings(t0: float, t1: float, t2: float, t3: float) -> dict[str, float]:

@@ -3,13 +3,10 @@
 from typing import Any, Awaitable, Callable, Protocol
 
 from pondera.models.run import RunResult
+from pondera.errors import RunnerError
 
 # Async progress callback contract (optional)
 ProgressCallback = Callable[[str], Awaitable[None]]
-
-
-class RunnerError(RuntimeError):
-    """Raised when a runner cannot execute or normalize the result."""
 
 
 class Runner(Protocol):

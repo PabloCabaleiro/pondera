@@ -10,12 +10,15 @@ The format follows the principles of [Keep a Changelog](https://keepachangelog.c
 - Enforce per-case `timeout_s` via `asyncio.wait_for` around runner and judge execution (raises `asyncio.TimeoutError`).
 - Tests for runner and judge timeout behavior.
 - Validation: per-criterion threshold keys now validated via Pydantic (`CaseJudge` field validator + `EvaluationResult` model validator) eliminating silent fallback to 0 scores.
+- Structured error classes introduced: `RunnerError`, `JudgeError`, `TimeoutError` (subclass of `asyncio.TimeoutError`), and `ValidationError` with wrapping of raw exceptions in runner/judge execution and YAML load path.
+- Basic logging: added standard library logging calls (logger name `pondera`) in core API execution path and simple availability test.
 
 ### Changed (Unreleased)
 
 - API now always returns `MultiEvaluationResult` (single run wrapped with one `EvaluationResult`) for a stable schema.
 - Unified pass/fail logic: removed duplicated threshold code by reusing `compute_pass` for multi-evaluation aggregation.
 - Removed ad-hoc runtime threshold key validation function in favor of model-level validators.
+- Timeout raising now uses project `TimeoutError` (still an `asyncio.TimeoutError` subclass) for consistent catching.
 
 ### Fixed (Unreleased)
 

@@ -161,5 +161,5 @@ def reload_settings() -> PonderaSettings:
     """
     Clear cache and reload; useful in tests.
     """
-    get_settings.cache_clear()  # type: ignore[attr-defined]
+    get_settings.cache_clear()
     return get_settings()
