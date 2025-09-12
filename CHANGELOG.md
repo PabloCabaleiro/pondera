@@ -9,7 +9,7 @@ The format follows the principles of [Keep a Changelog](https://keepachangelog.c
 ## [v0.4.0](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.4.0) - 2025-09-12
 
 <!-- markdownlint-disable-next-line MD024 -->
-### Added (Unreleased)
+### Added
 
 - Persist judge prompt as `judge_prompt.txt` and include `judge_prompt` field in `Judgment` plus `has_judge_prompt` flag in `meta.json`.
 - Enforce per-case `timeout_s` via `asyncio.wait_for` around runner and judge execution (raises `asyncio.TimeoutError`).
@@ -18,7 +18,7 @@ The format follows the principles of [Keep a Changelog](https://keepachangelog.c
 - Structured error classes introduced: `RunnerError`, `JudgeError`, `TimeoutError` (subclass of `asyncio.TimeoutError`), and `ValidationError` with wrapping of raw exceptions in runner/judge execution and YAML load path.
 - Basic logging: added standard library logging calls (logger name `pondera`) in core API execution path and simple availability test.
 
-### Changed (Unreleased)
+### Changed
 
 - API now always returns `MultiEvaluationResult` (single run wrapped with one `EvaluationResult`) for a stable schema.
 - Unified pass/fail logic: removed duplicated threshold code by reusing `compute_pass` for multi-evaluation aggregation.
@@ -27,7 +27,7 @@ The format follows the principles of [Keep a Changelog](https://keepachangelog.c
 - Fail-fast on missing criterion scores when per-criterion thresholds provided (no silent 0 default); `compute_pass` now raises `ValidationError`.
 - BREAKING: normalized naming: removed `Judgment.pass_fail`/dual serialization; single boolean field `evaluation_passed` everywhere (tests & artifacts updated, no backward alias).
 
-### Fixed (Unreleased)
+### Fixed
 
 - Updated tests to align with unified return type.
 - Consistent pass/fail evaluation across single and multi-run cases (previous divergence removed).
