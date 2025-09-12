@@ -1,0 +1,8 @@
+id: timeout-demo
+input:
+  query: "Will this time out?"
+expect: {}
+judge:
+  request: "Judge quickly"
+  overall_threshold: 50
+timeout_s: 1

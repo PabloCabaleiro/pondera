@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 from pondera.models.run import RunResult
 from pondera.models.judgment import Judgment
 from pondera.models.case import CaseSpec
@@ -25,3 +25,17 @@ class EvaluationResult(BaseModel):
     passed: bool
     # Optional timings in seconds
     timings_s: dict[str, float] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_threshold_keys(self) -> "EvaluationResult":
+        pct = self.per_criterion_thresholds or {}
+        if pct:
+            score_keys = set(self.judgment.criteria_scores.keys())
+            missing = set(pct.keys()) - score_keys
+            if missing:
+                raise ValueError(
+                    "Invalid per_criterion_thresholds keys (unknown in criteria_scores: "
+                    + ", ".join(sorted(missing))
+                    + ")"
+                )
+        return self

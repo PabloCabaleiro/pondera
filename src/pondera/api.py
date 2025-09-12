@@ -109,28 +109,44 @@ async def evaluate_case_async(
     return multi
 
 
-def _run_case(case: "CaseSpec", runner: Runner, progress: ProgressCallback | None) -> Any:
-    """Run the case using the runner."""
-    return runner.run(
-        question=case.input.query,
-        attachments=case.input.attachments,
-        params=case.input.params,
-        progress=progress,
-    )
+async def _run_case(case: "CaseSpec", runner: Runner, progress: ProgressCallback | None) -> Any:
+    """Run the case using the runner enforcing per-case timeout."""
+    try:
+        return await asyncio.wait_for(
+            runner.run(
+                question=case.input.query,
+                attachments=case.input.attachments,
+                params=case.input.params,
+                progress=progress,
+            ),
+            timeout=case.timeout_s,
+        )
+    except asyncio.TimeoutError as ex:  # pragma: no cover - message path
+        raise asyncio.TimeoutError(
+            f"runner timed out after {case.timeout_s}s for case '{case.id}'"
+        ) from ex
 
 
-def _judge_case(
+async def _judge_case(
     case: "CaseSpec", run_res: Any, judge: JudgeProtocol, rubric: list[RubricCriterion] | None
 ) -> Any:
-    """Judge the answer using the judge."""
-    return judge.judge(
-        question=case.input.query,
-        answer=run_res.answer or "",
-        files=run_res.files,
-        judge_request=case.judge.request,
-        rubric=rubric,
-        system_append=case.judge.system_append,
-    )
+    """Judge the answer enforcing per-case timeout."""
+    try:
+        return await asyncio.wait_for(
+            judge.judge(
+                question=case.input.query,
+                answer=run_res.answer or "",
+                files=run_res.files,
+                judge_request=case.judge.request,
+                rubric=rubric,
+                system_append=case.judge.system_append,
+            ),
+            timeout=case.timeout_s,
+        )
+    except asyncio.TimeoutError as ex:  # pragma: no cover - message path
+        raise asyncio.TimeoutError(
+            f"judge timed out after {case.timeout_s}s for case '{case.id}'"
+        ) from ex
 
 
 def _get_timings(t0: float, t1: float, t2: float, t3: float) -> dict[str, float]:
@@ -188,16 +204,24 @@ def _aggregate_multi_evaluations(
         vals = [float(ev.judgment.criteria_scores.get(key, 0)) for ev in evaluations]
         per_crit_aggs[key] = aggregate_numbers(vals, primary_metric)
     aggregates = CriteriaAggregates(overall=overall_agg, per_criterion=per_crit_aggs)
+    # Reuse unified compute_pass logic by synthesizing an aggregated score dict.
+    aggregated_criteria_scores: dict[str, int] = {}
+    for k, agg in per_crit_aggs.items():
+        aggregated_criteria_scores[k] = int(getattr(agg, primary_metric.value))
     overall_value_for_pass = getattr(overall_agg, primary_metric.value)
-    case_overall_th = evaluations[0].overall_threshold
-    percrit_th = evaluations[0].per_criterion_thresholds
-    criteria_ok = True
-    for k, th in (percrit_th or {}).items():
-        crit_val = getattr(per_crit_aggs[k], primary_metric.value) if k in per_crit_aggs else 0.0
-        if crit_val < th:
-            criteria_ok = False
-            break
-    passed_primary = (overall_value_for_pass >= case_overall_th) and criteria_ok
+    # Aggregate any pre-check failures across runs (if any run failed a pre-check we fail overall).
+    aggregated_precheck_failures: list[str] = []
+    for idx, ev in enumerate(evaluations):
+        if ev.precheck_failures:
+            # Prefix with run index for traceability.
+            aggregated_precheck_failures.extend([f"run {idx+1}: {m}" for m in ev.precheck_failures])
+    passed_primary = compute_pass(
+        precheck_failures=aggregated_precheck_failures,
+        overall_threshold=evaluations[0].overall_threshold,
+        per_criterion_thresholds=evaluations[0].per_criterion_thresholds or {},
+        criteria_scores=aggregated_criteria_scores,
+        overall_score=int(overall_value_for_pass),
+    )
     return aggregates, passed_primary
 
 

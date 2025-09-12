@@ -7,14 +7,20 @@ The format follows the principles of [Keep a Changelog](https://keepachangelog.c
 ### Added (Unreleased)
 
 - Persist judge prompt as `judge_prompt.txt` and include `judge_prompt` field in `Judgment` plus `has_judge_prompt` flag in `meta.json`.
+- Enforce per-case `timeout_s` via `asyncio.wait_for` around runner and judge execution (raises `asyncio.TimeoutError`).
+- Tests for runner and judge timeout behavior.
+- Validation: per-criterion threshold keys now validated via Pydantic (`CaseJudge` field validator + `EvaluationResult` model validator) eliminating silent fallback to 0 scores.
 
 ### Changed (Unreleased)
 
 - API now always returns `MultiEvaluationResult` (single run wrapped with one `EvaluationResult`) for a stable schema.
+- Unified pass/fail logic: removed duplicated threshold code by reusing `compute_pass` for multi-evaluation aggregation.
+- Removed ad-hoc runtime threshold key validation function in favor of model-level validators.
 
 ### Fixed (Unreleased)
 
 - Updated tests to align with unified return type.
+- Consistent pass/fail evaluation across single and multi-run cases (previous divergence removed).
 
 ## [v0.3.0](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.3.0) - 2025-09-10
 

@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from pondera.models.rubric import RubricCriterion
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -51,6 +51,22 @@ class CaseJudge(BaseModel):
     per_criterion_thresholds: dict[str, int] = Field(default_factory=dict)
     rubric: list[RubricCriterion] | None = None  # overrides project default rubric
     system_append: str = Field(default="")  # extra system guidance for the judge
+
+    @field_validator("per_criterion_thresholds")
+    @classmethod
+    def _threshold_keys_in_rubric(cls, v: dict[str, int], info: Any) -> dict[str, int]:
+        # If a rubric is present, ensure all threshold keys are rubric criterion names.
+        rubric = info.data.get("rubric") if hasattr(info, "data") else None
+        if rubric and v:
+            rubric_names = {c.name for c in rubric}
+            missing = set(v.keys()) - rubric_names
+            if missing:
+                raise ValueError(
+                    "Invalid per_criterion_thresholds keys (not in rubric: "
+                    + ", ".join(sorted(missing))
+                    + ")"
+                )
+        return v
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -403,6 +403,40 @@ class TestEvaluateCase:
         assert runner.call_count == 1
         assert judge.call_count == 1
 
+    @pytest.mark.asyncio
+    async def test_evaluate_case_async_invalid_threshold_keys(
+        self, sample_case: CaseSpec, sample_rubric: list[RubricCriterion]
+    ) -> None:
+        # Provide a threshold key not present in rubric or criteria_scores
+        bad_case = CaseSpec(
+            id="test-case",
+            input=sample_case.input,
+            judge=CaseJudge(
+                request="Judge",
+                rubric=sample_rubric,
+                overall_threshold=50,
+                per_criterion_thresholds={"nonexistent": 10},
+            ),
+        )
+        runner = MockRunner()
+        # Judge returns criteria without the bad key
+        judge = MockJudge(
+            judgment=Judgment(
+                score=80,
+                pass_fail=True,
+                reasoning="ok",
+                criteria_scores={"accuracy": 80, "clarity": 75},
+            )
+        )
+        with (
+            patch("pondera.api.load_case_yaml", return_value=bad_case),
+            patch("pondera.api.get_settings"),
+            patch("pondera.api.apply_prejudge_checks", return_value=[]),
+            patch("pondera.api.choose_rubric", return_value=sample_rubric),
+        ):
+            with pytest.raises(ValueError, match="Invalid per_criterion_thresholds keys"):
+                await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
+
     def test_evaluate_case_default_judge(self, sample_case: CaseSpec) -> None:
         """If no judge passed, built-in Judge should be instantiated and used."""
         runner = MockRunner()
