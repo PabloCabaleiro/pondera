@@ -30,7 +30,7 @@ async def my_runner(
     # Return RunResult or a dict normalizable to it
     return normalize_run_result(
         {
-            "answer_markdown": answer_md,
+            "answer": answer_md,
             "artifacts": [],  # optional file paths/URIs
             "files": [],  # list of files to expose to judge (subset/superset of artifacts)
             "metadata": {"steps": 1},  # optional info

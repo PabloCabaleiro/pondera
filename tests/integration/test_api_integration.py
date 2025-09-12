@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch, AsyncMock
 
 from pondera.api import evaluate_case_async, evaluate_case
+from pondera.models.multi_evaluation import MultiEvaluationResult
 from pondera.judge.base import Judge
 from tests.integration.test_runner import TestRunner, MathTestRunner
 
@@ -46,14 +47,15 @@ class TestAPIIntegration:
 
             # Run the evaluation
             result = evaluate_case(case_yaml_path=case_path, runner=runner, judge=judge)
-
-            # Verify the result
-            assert result.case_id == "integration_basic_test"
-            assert result.passed is not None  # Should have a pass/fail result
-            assert result.run.question == "What is the capital of France?"
-            assert result.run.answer_markdown == "Paris is the capital of France"
-            assert result.judgment is not None
-            assert 0.0 <= result.judgment.score <= 100.0
+            assert isinstance(result, MultiEvaluationResult)
+            assert len(result.evaluations) == 1
+            ev = result.evaluations[0]
+            assert ev.case_id == "integration_basic_test"
+            assert result.passed is not None
+            assert ev.run.question == "What is the capital of France?"
+            assert ev.run.answer == "Paris is the capital of France"
+            assert ev.judgment is not None
+            assert 0.0 <= ev.judgment.score <= 100.0
 
     @pytest.mark.asyncio
     async def test_evaluate_case_async_basic(self) -> None:
@@ -81,12 +83,14 @@ class TestAPIIntegration:
 
             judge = Judge()
             result = await evaluate_case_async(case_yaml_path=case_path, runner=runner, judge=judge)
-
-            assert result.case_id == "integration_basic_test"
+            assert isinstance(result, MultiEvaluationResult)
+            assert len(result.evaluations) == 1
+            ev = result.evaluations[0]
+            assert ev.case_id == "integration_basic_test"
             assert result.passed is not None
-            assert result.run.question == "What is the capital of France?"
-            assert result.run.answer_markdown == "Paris is the capital of France"
-            assert result.judgment is not None
+            assert ev.run.question == "What is the capital of France?"
+            assert ev.run.answer == "Paris is the capital of France"
+            assert ev.judgment is not None
 
     @pytest.mark.asyncio
     async def test_evaluate_case_with_math_runner(self) -> None:
@@ -114,12 +118,14 @@ class TestAPIIntegration:
 
             judge = Judge()
             result = await evaluate_case_async(case_yaml_path=case_path, runner=runner, judge=judge)
-
-            assert result.case_id == "integration_math_test"
-            assert result.run.question == "What is 2 + 2?"
-            assert result.run.answer_markdown == "4"
-            assert result.judgment is not None
-            assert result.judgment.score >= 80
+            assert isinstance(result, MultiEvaluationResult)
+            assert len(result.evaluations) == 1
+            ev = result.evaluations[0]
+            assert ev.case_id == "integration_math_test"
+            assert ev.run.question == "What is 2 + 2?"
+            assert ev.run.answer == "4"
+            assert ev.judgment is not None
+            assert ev.judgment.score >= 80
 
     @pytest.mark.asyncio
     async def test_evaluate_case_with_rubric(self) -> None:
@@ -149,13 +155,15 @@ class TestAPIIntegration:
 
             judge = Judge()
             result = await evaluate_case_async(case_path, runner=runner, judge=judge)
-
-            assert result.case_id == "integration_rubric_test"
-            assert result.judgment is not None
-            assert "accuracy" in result.judgment.criteria_scores
-            assert "completeness" in result.judgment.criteria_scores
-            assert 0.0 <= result.judgment.criteria_scores["accuracy"] <= 100.0
-            assert 0.0 <= result.judgment.criteria_scores["completeness"] <= 100.0
+            assert isinstance(result, MultiEvaluationResult)
+            assert len(result.evaluations) == 1
+            ev = result.evaluations[0]
+            assert ev.case_id == "integration_rubric_test"
+            assert ev.judgment is not None
+            assert "accuracy" in ev.judgment.criteria_scores
+            assert "completeness" in ev.judgment.criteria_scores
+            assert 0.0 <= ev.judgment.criteria_scores["accuracy"] <= 100.0
+            assert 0.0 <= ev.judgment.criteria_scores["completeness"] <= 100.0
 
     @pytest.mark.asyncio
     async def test_evaluate_case_with_progress_callback(self) -> None:
@@ -190,10 +198,12 @@ class TestAPIIntegration:
             result = await evaluate_case_async(
                 case_path, runner=runner, judge=judge, progress=progress_callback
             )
-
+            assert isinstance(result, MultiEvaluationResult)
+            assert len(result.evaluations) == 1
+            ev = result.evaluations[0]
             assert len(progress_messages) > 0
             assert any("running case" in msg for msg in progress_messages)
-            assert result.case_id == "integration_basic_test"
+            assert ev.case_id == "integration_basic_test"
 
     @pytest.mark.asyncio
     async def test_evaluate_case_failure_case(self) -> None:
@@ -221,12 +231,15 @@ class TestAPIIntegration:
 
             judge = Judge()
             result = await evaluate_case_async(case_path, runner=runner, judge=judge)
-
-            assert result.case_id == "integration_math_test"
-            assert result.run.answer_markdown == "Wrong answer: 5"
-            assert result.judgment is not None
-            assert result.judgment.score < 90
+            assert isinstance(result, MultiEvaluationResult)
+            assert len(result.evaluations) == 1
+            ev = result.evaluations[0]
+            assert ev.case_id == "integration_math_test"
+            assert ev.run.answer == "Wrong answer: 5"
+            assert ev.judgment is not None
+            assert ev.judgment.score < 90
             assert result.passed is False
+            assert ev.passed is False
 
     def test_evaluate_case_with_nonexistent_file(self) -> None:
         """Test evaluation with non-existent case file."""

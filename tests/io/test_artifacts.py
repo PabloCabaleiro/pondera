@@ -73,7 +73,7 @@ class TestSummaryMdFunction:
         """Test basic summary generation."""
         case_input = CaseInput(query="What is 2+2?")
         case = CaseSpec(id="basic-math", input=case_input)
-        run = RunResult(question="What is 2+2?", answer_markdown="2+2 equals 4")
+        run = RunResult(question="What is 2+2?", answer="2+2 equals 4")
         judgment = Judgment(
             score=90,
             pass_fail=True,
@@ -103,7 +103,7 @@ class TestSummaryMdFunction:
         """Test summary for a failed case."""
         case_input = CaseInput(query="Complex question")
         case = CaseSpec(id="failed-case", input=case_input)
-        run = RunResult(question="Complex question", answer_markdown="Incomplete answer")
+        run = RunResult(question="Complex question", answer="Incomplete answer")
         judgment = Judgment(
             score=40,
             pass_fail=False,
@@ -216,7 +216,7 @@ class TestWriteCaseArtifacts:
         case = CaseSpec(id="math-test", input=case_input)
         run = RunResult(
             question="What is 2+2?",
-            answer_markdown="# Answer\n\n2+2 equals 4",
+            answer="# Answer\n\n2+2 equals 4",
             metadata={"execution_time": 1.5},
         )
         judgment = Judgment(
@@ -332,7 +332,7 @@ class TestWriteCaseArtifacts:
         """Test writing artifacts when answer is empty."""
         case_input = CaseInput(query="Empty answer test")
         case = CaseSpec(id="empty-answer", input=case_input)
-        run = RunResult(question="Empty answer test", answer_markdown="")
+        run = RunResult(question="Empty answer test", answer="")
         judgment = Judgment(
             score=0, pass_fail=False, reasoning="No answer provided", criteria_scores={}
         )
@@ -359,7 +359,7 @@ class TestWriteCaseArtifacts:
         """Test writing artifacts when answer is None."""
         case_input = CaseInput(query="None answer test")
         case = CaseSpec(id="none-answer", input=case_input)
-        run = RunResult(question="None answer test")  # answer_markdown defaults to ""
+        run = RunResult(question="None answer test")  # answer defaults to ""
         judgment = Judgment(score=0, pass_fail=False, reasoning="No answer", criteria_scores={})
 
         evaluation = EvaluationResult(
@@ -375,7 +375,7 @@ class TestWriteCaseArtifacts:
             artifacts_root = Path(temp_dir)
             case_dir = write_case_artifacts(artifacts_root, evaluation)
 
-            # Verify answer.md exists and is empty (since answer_markdown defaults to "")
+            # Verify answer.md exists and is empty (since answer defaults to "")
             answer_file = case_dir / "answer.md"
             assert answer_file.exists()
             assert answer_file.read_text(encoding="utf-8") == ""
@@ -411,7 +411,7 @@ class TestWriteCaseArtifacts:
         case = CaseSpec(id="unicode-test", input=case_input)
         run = RunResult(
             question="Unicode test",
-            answer_markdown="# Réponse\n\nCafé ☕ and résumé 📄\n\n测试中文",
+            answer="# Réponse\n\nCafé ☕ and résumé 📄\n\n测试中文",
         )
         judgment = Judgment(
             score=85,

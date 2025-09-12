@@ -49,7 +49,7 @@ class TestEvaluationResult:
         case = CaseSpec(id="analysis-case", input=case_input)
         run = RunResult(
             question="Analyze this data",
-            answer_markdown="# Analysis\n\nThe data shows trends...",
+            answer="# Analysis\n\nThe data shows trends...",
             artifacts=["chart.png"],
             metadata={"execution_time": 5.2},
         )
@@ -76,7 +76,7 @@ class TestEvaluationResult:
 
         assert evaluation.case_id == "analysis-case"
         assert evaluation.case.input.query == "Analyze this data"
-        assert evaluation.run.answer_markdown.startswith("# Analysis")
+        assert evaluation.run.answer.startswith("# Analysis")
         assert evaluation.judgment.score == 75
         assert evaluation.precheck_failures == ["Missing required keyword"]
         assert evaluation.overall_threshold == 70
@@ -91,7 +91,7 @@ class TestEvaluationResult:
         case = CaseSpec(id="impossible-case", input=case_input)
         run = RunResult(
             question="What is the capital of Mars?",
-            answer_markdown="Mars doesn't have a capital city.",
+            answer="Mars doesn't have a capital city.",
         )
         judgment = Judgment(
             score=45,

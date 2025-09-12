@@ -20,8 +20,8 @@ class TestMyRunner:
 
         assert isinstance(result, RunResult)
         assert result.question == question
-        assert "# Answer" in result.answer_markdown
-        assert f"Question: **{question}**" in result.answer_markdown
+        assert "# Answer" in result.answer
+        assert f"Question: **{question}**" in result.answer
         assert result.artifacts == []
         assert result.metadata == {"steps": 1}
 
@@ -35,7 +35,7 @@ class TestMyRunner:
 
         assert isinstance(result, RunResult)
         assert result.question == question
-        assert "# Answer" in result.answer_markdown
+        assert "# Answer" in result.answer
 
     @pytest.mark.asyncio
     async def test_my_runner_with_params(self) -> None:
@@ -47,8 +47,8 @@ class TestMyRunner:
 
         assert isinstance(result, RunResult)
         assert result.question == question
-        assert "language" in result.answer_markdown
-        assert "functional" in result.answer_markdown
+        assert "language" in result.answer
+        assert "functional" in result.answer
         assert result.metadata == {"steps": 1}
 
     @pytest.mark.asyncio
@@ -81,9 +81,9 @@ class TestMyRunner:
 
         assert isinstance(result, RunResult)
         assert result.question == question
-        assert "# Answer" in result.answer_markdown
-        assert "temperature" in result.answer_markdown
-        assert "max_tokens" in result.answer_markdown
+        assert "# Answer" in result.answer
+        assert "temperature" in result.answer
+        assert "max_tokens" in result.answer
         assert result.artifacts == []
         assert result.metadata == {"steps": 1}
 
@@ -109,7 +109,7 @@ class TestMyRunner:
 
         assert isinstance(result, RunResult)
         assert result.question == question
-        assert "Params: `{}`" in result.answer_markdown
+        assert "Params: `{}`" in result.answer
 
     @pytest.mark.asyncio
     async def test_my_runner_empty_lists_and_dicts(self) -> None:
@@ -122,7 +122,7 @@ class TestMyRunner:
 
         assert isinstance(result, RunResult)
         assert result.question == question
-        assert "Params: `{}`" in result.answer_markdown
+        assert "Params: `{}`" in result.answer
 
     @pytest.mark.asyncio
     async def test_my_runner_progress_none_handled(self) -> None:
@@ -136,7 +136,7 @@ class TestMyRunner:
         assert result.question == question
 
     @pytest.mark.asyncio
-    async def test_my_runner_answer_markdown_format(self) -> None:
+    async def test_my_runner_answer_format(self) -> None:
         """Test the format of the generated answer markdown."""
         question = "Format test"
         params = {"key1": "value1", "key2": 42}
@@ -144,13 +144,13 @@ class TestMyRunner:
         result = await my_runner(question=question, params=params)
 
         # Check markdown structure
-        lines = result.answer_markdown.split("\n")
+        lines = result.answer.split("\n")
         assert lines[0] == "# Answer"
         assert lines[1] == ""  # Empty line after header
-        assert f"Question: **{question}**" in result.answer_markdown
-        assert "key1" in result.answer_markdown
-        assert "value1" in result.answer_markdown
-        assert "42" in result.answer_markdown
+        assert f"Question: **{question}**" in result.answer
+        assert "key1" in result.answer
+        assert "value1" in result.answer
+        assert "42" in result.answer
 
     @pytest.mark.asyncio
     async def test_my_runner_complex_params(self) -> None:
@@ -169,5 +169,5 @@ class TestMyRunner:
         assert isinstance(result, RunResult)
         assert result.question == question
         # Should contain string representation of complex params
-        assert "nested" in result.answer_markdown
-        assert "inner" in result.answer_markdown
+        assert "nested" in result.answer
+        assert "inner" in result.answer

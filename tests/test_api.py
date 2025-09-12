@@ -8,7 +8,6 @@ from typing import Any
 
 from pondera.api import evaluate_case_async, evaluate_case
 from pondera.models.case import CaseSpec, CaseInput, CaseJudge
-from pondera.models.evaluation import EvaluationResult
 from pondera.models.judgment import Judgment
 from pondera.models.run import RunResult
 from pondera.models.rubric import RubricCriterion
@@ -20,7 +19,7 @@ class MockRunner:
     """Mock runner for testing."""
 
     def __init__(self, result: RunResult | None = None, delay: float = 0.0):
-        self.result = result or RunResult(question="Test question", answer_markdown="Test answer")
+        self.result = result or RunResult(question="Test question", answer="Test answer")
         self.delay = delay
         self.call_count = 0
         self.last_call_args: dict[str, Any] | None = None
@@ -65,7 +64,7 @@ class MockJudge:
         self,
         *,
         question: str,
-        answer_markdown: str,
+        answer: str,
         files: list[str] | None = None,
         judge_request: str | None = None,
         rubric: list[RubricCriterion] | None = None,
@@ -75,7 +74,7 @@ class MockJudge:
         self.call_count += 1
         self.last_call_args = {
             "question": question,
-            "answer_markdown": answer_markdown,
+            "answer": answer,
             "files": files,
             "judge_request": judge_request,
             "rubric": rubric,
@@ -132,10 +131,12 @@ class TestEvaluateCaseAsync:
             patch("pondera.api.compute_pass", return_value=True),
         ):
             result = await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
-        assert isinstance(result, EvaluationResult)
-        assert result.case_id == "test-case"
-        assert result.case == sample_case
-        assert result.passed is True
+            assert isinstance(result, MultiEvaluationResult)
+            assert len(result.evaluations) == 1
+            single = result.evaluations[0]
+            assert single.case_id == "test-case"
+            assert single.case == sample_case
+            assert result.passed is True
         assert runner.call_count == 1
         assert judge.call_count == 1
 
@@ -189,8 +190,11 @@ class TestEvaluateCaseAsync:
             patch("pondera.api.compute_pass", return_value=False),
         ):
             result = await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
-        assert result.precheck_failures == precheck_failures
-        assert result.passed is False
+            assert isinstance(result, MultiEvaluationResult)
+            ev = result.evaluations[0]
+            assert ev.precheck_failures == precheck_failures
+            # MultiEvaluationResult.passed is based on aggregated scores only; evaluation-level pass reflects precheck failure logic
+            assert ev.passed is False
 
     @pytest.mark.asyncio
     async def test_evaluate_case_async_timing_measurement(self, sample_case: CaseSpec) -> None:
@@ -204,12 +208,14 @@ class TestEvaluateCaseAsync:
             patch("pondera.api.compute_pass", return_value=True),
         ):
             result = await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
-        assert "runner_s" in result.timings_s
-        assert "judge_s" in result.timings_s
-        assert "total_s" in result.timings_s
-        assert result.timings_s["runner_s"] >= 0.09
-        assert result.timings_s["judge_s"] >= 0.04
-        assert result.timings_s["total_s"] >= 0.14
+            assert isinstance(result, MultiEvaluationResult)
+            ev = result.evaluations[0]
+            assert "runner_s" in ev.timings_s
+            assert "judge_s" in ev.timings_s
+            assert "total_s" in ev.timings_s
+            assert ev.timings_s["runner_s"] >= 0.09
+            assert ev.timings_s["judge_s"] >= 0.04
+            assert ev.timings_s["total_s"] >= 0.14
 
     @pytest.mark.asyncio
     async def test_evaluate_case_async_passes_runner_parameters(
@@ -266,7 +272,7 @@ class TestEvaluateCaseAsync:
             await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
         assert judge.last_call_args is not None
         assert judge.last_call_args["question"] == "What is the capital of France?"
-        assert judge.last_call_args["answer_markdown"] == "Test answer"
+        assert judge.last_call_args["answer"] == "Test answer"
         assert judge.last_call_args["judge_request"] == "Custom judge request"
         assert judge.last_call_args["rubric"] == sample_rubric
         assert judge.last_call_args["system_append"] == "Be extra strict"
@@ -284,8 +290,10 @@ class TestEvaluateCaseAsync:
             patch("pondera.api.compute_pass", return_value=True),
         ):
             result = await evaluate_case_async(case_path, runner=runner, judge=judge)
-        assert isinstance(result, EvaluationResult)
-        assert result.case_id == "test-case"
+            assert isinstance(result, MultiEvaluationResult)
+            assert len(result.evaluations) == 1
+            single = result.evaluations[0]
+            assert single.case_id == "test-case"
 
     @pytest.mark.asyncio
     async def test_evaluate_case_async_multi_repetitions(self, sample_case: CaseSpec) -> None:
@@ -321,11 +329,11 @@ class TestEvaluateCaseAsync:
             patch("pondera.api.compute_pass", return_value=True),
         ):
             result = await evaluate_case_async("/fake/path.yaml", runner=runner, judge=judge)
-        assert isinstance(result, MultiEvaluationResult)
-        assert len(result.evaluations) == 3
-        overall_mean = result.aggregates.overall.mean
-        assert overall_mean == pytest.approx(sum(scores) / len(scores))
-        assert set(result.aggregates.per_criterion.keys()) == {"accuracy", "clarity"}
+            assert isinstance(result, MultiEvaluationResult)
+            assert len(result.evaluations) == 3
+            overall_mean = result.aggregates.overall.mean
+            assert overall_mean == pytest.approx(sum(scores) / len(scores))
+            assert set(result.aggregates.per_criterion.keys()) == {"accuracy", "clarity"}
 
     @pytest.mark.asyncio
     async def test_evaluate_case_async_primary_metric_max(self, sample_case: CaseSpec) -> None:
@@ -366,9 +374,9 @@ class TestEvaluateCaseAsync:
                 judge=judge,
                 primary_metric=AggregationMetric.max,
             )
-        assert isinstance(result, MultiEvaluationResult)
-        assert result.passed is True
-        assert result.primary_metric == AggregationMetric.max
+            assert isinstance(result, MultiEvaluationResult)
+            assert result.passed is True
+            assert result.primary_metric == AggregationMetric.max
 
 
 class TestEvaluateCase:
@@ -388,8 +396,10 @@ class TestEvaluateCase:
         ):
             result = evaluate_case("/fake/path.yaml", runner=runner, judge=judge)
 
-        assert isinstance(result, EvaluationResult)
-        assert result.case_id == "test-case"
+        assert isinstance(result, MultiEvaluationResult)
+        assert len(result.evaluations) == 1
+        single = result.evaluations[0]
+        assert single.case_id == "test-case"
         assert runner.call_count == 1
         assert judge.call_count == 1
 
@@ -419,7 +429,10 @@ class TestEvaluateCase:
 
             inst.judge.side_effect = _mock_judge
             result = evaluate_case("/fake/path.yaml", runner=runner)
-        assert result.judgment.score == 90
+        assert isinstance(result, MultiEvaluationResult)
+        assert len(result.evaluations) == 1
+        single = result.evaluations[0]
+        assert single.judgment.score == 90
         mock_builtin_judge.assert_called_once()
 
     def test_evaluate_case_detects_running_loop(self, sample_case: CaseSpec) -> None:
@@ -461,8 +474,10 @@ class TestEvaluateCase:
                 progress=progress_callback,
             )
 
-        assert isinstance(result, EvaluationResult)
-        assert result.case_id == "test-case"
+        assert isinstance(result, MultiEvaluationResult)
+        assert len(result.evaluations) == 1
+        single = result.evaluations[0]
+        assert single.case_id == "test-case"
 
     def test_evaluate_case_multi_sync(self, sample_case: CaseSpec) -> None:
         """Sync wrapper returns MultiEvaluationResult when repetitions>1."""
@@ -497,7 +512,7 @@ class TestApiIntegration:
         # Create runner that returns specific result
         run_result = RunResult(
             question="What is the capital of France?",
-            answer_markdown="The capital of France is Paris.",
+            answer="The capital of France is Paris.",
             artifacts=["source.txt"],
             metadata={"confidence": 0.95},
         )
@@ -523,15 +538,18 @@ class TestApiIntegration:
                 "/fake/path.yaml", runner=runner, judge=judge, default_rubric=sample_rubric
             )
 
-        # Verify complete result structure
-        assert result.case_id == "test-case"
-        assert result.case == sample_case
-        assert result.run == run_result
-        assert result.judgment == judgment
-        assert result.precheck_failures == []
-        assert result.overall_threshold == 7.0
-        assert result.per_criterion_thresholds == {}  # Empty dict from fixture
-        assert result.passed is True
-        assert "runner_s" in result.timings_s
-        assert "judge_s" in result.timings_s
-        assert "total_s" in result.timings_s
+            # Verify complete result structure
+            assert isinstance(result, MultiEvaluationResult)
+            assert len(result.evaluations) == 1
+            single = result.evaluations[0]
+            assert single.case_id == "test-case"
+            assert single.case == sample_case
+            assert single.run == run_result
+            assert single.judgment == judgment
+            assert single.precheck_failures == []
+            assert single.overall_threshold == 7.0
+            assert single.per_criterion_thresholds == {}  # Empty dict from fixture
+            assert single.passed is True
+            assert "runner_s" in single.timings_s
+            assert "judge_s" in single.timings_s
+            assert "total_s" in single.timings_s

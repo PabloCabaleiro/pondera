@@ -10,7 +10,7 @@ class TestRunResult:
     def test_minimal_run_result(self) -> None:
         result = RunResult(question="What is 2+2?")
         assert result.question == "What is 2+2?"
-        assert result.answer_markdown == ""
+        assert result.answer == ""
         assert result.artifacts == []
         assert result.files == []
         assert result.metadata == {}
@@ -18,7 +18,7 @@ class TestRunResult:
     def test_full_run_result(self) -> None:
         result = RunResult(
             question="Analyze the data",
-            answer_markdown="# Analysis Results\n\nThe data shows...",
+            answer="# Analysis Results\n\nThe data shows...",
             artifacts=["chart.png", "report.pdf"],
             files=["chart.png"],
             metadata={
@@ -29,7 +29,7 @@ class TestRunResult:
             },
         )
         assert result.question == "Analyze the data"
-        assert result.answer_markdown == "# Analysis Results\n\nThe data shows..."
+        assert result.answer == "# Analysis Results\n\nThe data shows..."
         assert result.artifacts == ["chart.png", "report.pdf"]
         assert result.files == ["chart.png"]
         assert result.metadata["execution_time"] == 5.2
@@ -101,11 +101,11 @@ print("Hello, World!")
 |----------|----------|
 | Value 1  | Value 2  |
 """
-        result = RunResult(question="Format this nicely", answer_markdown=markdown_content)
-        assert result.answer_markdown == markdown_content
-        assert "# Title" in result.answer_markdown
-        assert "```python" in result.answer_markdown
-        assert "**Bold text**" in result.answer_markdown
+        result = RunResult(question="Format this nicely", answer=markdown_content)
+        assert result.answer == markdown_content
+        assert "# Title" in result.answer
+        assert "```python" in result.answer
+        assert "**Bold text**" in result.answer
 
     def test_extra_fields_forbidden(self) -> None:
         with pytest.raises(ValidationError) as exc_info:

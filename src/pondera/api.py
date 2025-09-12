@@ -34,7 +34,7 @@ async def _execute_case_once(
     t0 = time.perf_counter()
     run_res = await _run_case(case, runner, progress)
     t1 = time.perf_counter()
-    failures = apply_prejudge_checks(run_res.answer_markdown or "", case)
+    failures = apply_prejudge_checks(run_res.answer or "", case)
     use_rubric = choose_rubric(case.judge.rubric, default_rubric)
     await emit_progress(progress, "pondera: judging answer…")
     t2 = time.perf_counter()
@@ -65,31 +65,33 @@ async def evaluate_case_async(
     progress: ProgressCallback | None = None,
     primary_metric: AggregationMetric = AggregationMetric.mean,
     artifacts_root: Path | str | None = None,
-) -> EvaluationResult | MultiEvaluationResult:
-    """Evaluate a case (optionally multiple repetitions) and return results.
+) -> MultiEvaluationResult:
+    """Evaluate a case (any repetitions) and always return a MultiEvaluationResult.
 
-    - Reads `repetitions` from the case YAML. If `repetitions == 1` returns a single `EvaluationResult`.
-    - If `repetitions > 1`, executes the case multiple times and returns a `MultiEvaluationResult` with
-      aggregated stats (min/max/mean/median/stdev/variance) for overall score and per-criterion scores.
-    - `primary_metric` controls which aggregate is used to decide pass/fail of the aggregated result.
+    Rationale: a single uniform return type simplifies downstream handling.
+    For `repetitions == 1`, the result contains exactly one EvaluationResult in
+    `evaluations` and the aggregates are computed over that single sample.
     """
-    get_settings()
+    settings_obj = get_settings()
+    if artifacts_root is None:
+        artifacts_root = settings_obj.artifacts_dir
     case = load_case_yaml(case_yaml_path)
     reps = max(1, getattr(case, "repetitions", 1))
     if reps == 1:
-        single = await _execute_case_once(
-            case=case,
-            runner=runner,
-            judge=judge,
-            default_rubric=default_rubric,
-            progress=progress,
+        # Run exactly once, then wrap in MultiEvaluationResult for a stable API.
+        evaluations = [
+            await _execute_case_once(
+                case=case,
+                runner=runner,
+                judge=judge,
+                default_rubric=default_rubric,
+                progress=progress,
+            )
+        ]
+    else:
+        evaluations = await _run_multiple_evaluations(
+            case, reps, runner, judge, default_rubric, progress
         )
-        if artifacts_root:
-            write_case_artifacts(artifacts_root, single)
-        return single
-    evaluations = await _run_multiple_evaluations(
-        case, reps, runner, judge, default_rubric, progress
-    )
     aggregates, passed_primary = _aggregate_multi_evaluations(evaluations, primary_metric)
     multi = MultiEvaluationResult(
         case_id=case.id,
@@ -99,7 +101,11 @@ async def evaluate_case_async(
         primary_metric=primary_metric,
     )
     if artifacts_root:
-        write_multi_evaluation_artifacts(artifacts_root, multi)
+        # Preserve existing single-run artifact layout for backward compatibility.
+        if reps == 1:
+            write_case_artifacts(artifacts_root, evaluations[0])
+        else:
+            write_multi_evaluation_artifacts(artifacts_root, multi)
     return multi
 
 
@@ -119,7 +125,7 @@ def _judge_case(
     """Judge the answer using the judge."""
     return judge.judge(
         question=case.input.query,
-        answer_markdown=run_res.answer_markdown or "",
+        answer=run_res.answer or "",
         files=run_res.files,
         judge_request=case.judge.request,
         rubric=rubric,
@@ -204,8 +210,8 @@ def evaluate_case(
     progress: ProgressCallback | None = None,
     primary_metric: AggregationMetric = AggregationMetric.mean,
     artifacts_root: Path | str | None = None,
-) -> EvaluationResult | MultiEvaluationResult:
-    """Sync wrapper around `evaluate_case_async` supporting repetitions (see async docstring)."""
+) -> MultiEvaluationResult:
+    """Synchronous wrapper returning a MultiEvaluationResult (see async docstring)."""
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:

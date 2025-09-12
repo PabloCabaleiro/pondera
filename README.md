@@ -1,5 +1,7 @@
 # Pondera
 
+
+
 Lightweight, YAML‑first evaluation for AI models and agents. You write cases in YAML, provide a tiny async runner that returns markdown, and get a strict rubric‑scored JSON judgment back. No framework lock‑in.
 
 ## Why Pondera?
@@ -81,7 +83,7 @@ from pondera.judge import JudgeProtocol
 from pondera.models.judgment import Judgment
 
 class ConstantJudge(JudgeProtocol):
-  async def judge(self, *, question: str, answer_markdown: str, files, judge_request: str,
+  async def judge(self, *, question: str, answer: str, files, judge_request: str,
           rubric=None, system_append: str = "") -> Judgment:
     return Judgment(
       score=100,
@@ -113,23 +115,22 @@ The judge uses the pydantic-ai ecosystem. Configure provider credentials via env
 
 `evaluate_case_async` is the real coroutine that performs the evaluation (single or multi‑repetition). Use it inside async code (`await evaluate_case_async(...)`).
 
-`evaluate_case` is a thin convenience wrapper for synchronous contexts: it calls `asyncio.run` on `evaluate_case_async` and raises if an event loop is already running (to prevent nested loop issues). Choose:
+`evaluate_case` is a thin convenience wrapper for synchronous contexts: it calls `asyncio.run` on `evaluate_case_async` and raises if an event loop is already running (to prevent nested loop issues).
 
-- If you are already inside `async def` (e.g. in an async runner, web service, notebook with an active loop) use `await evaluate_case_async(...)`.
-- If you are writing a plain script or test function that is not async, call `evaluate_case(...)` directly.
-
-Both return the same dataclasses (`EvaluationResult` or `MultiEvaluationResult`) and accept the same parameters (the sync wrapper simply forwards them).
+Return type is always `MultiEvaluationResult` for a stable downstream API. When repetitions == 1 the object contains exactly one `EvaluationResult` in `evaluations[0]` and aggregates are computed over that single sample.
 
 ```python
 from pondera.api import evaluate_case
 from pondera.judge import Judge
 
 class DemoRunner:
-    async def run(self, *, question, attachments=None, params=None, progress=None):
-        return {"answer_markdown": f"# Answer\n\nEcho: **{question}**\n"}
+  async def run(self, *, question, attachments=None, params=None, progress=None):
+    from pondera.models.run import RunResult
+    return RunResult(question=question, answer=f"# Answer\n\nEcho: **{question}**\n")
 
-res = evaluate_case("eval/cases/hello.yaml", runner=DemoRunner(), judge=Judge())
-print(res.passed, res.judgment.score)
+multi = evaluate_case("eval/cases/hello.yaml", runner=DemoRunner(), judge=Judge())
+single = multi.evaluations[0]
+print(multi.passed, single.judgment.score)
 ```
 
 ### Testing (pytest)
@@ -141,9 +142,11 @@ from pondera.judge import Judge
 def test_hello_case():
   class DemoRunner:
     async def run(self, *, question, attachments=None, params=None, progress=None):
-      return {"answer_markdown": f"Answer: {question}"}
-  res = evaluate_case("eval/cases/hello.yaml", runner=DemoRunner(), judge=Judge())
-  assert res.passed
+      from pondera.models.run import RunResult
+      return RunResult(question=question, answer=f"Answer: {question}")
+  multi = evaluate_case("eval/cases/hello.yaml", runner=DemoRunner(), judge=Judge())
+  assert multi.passed
+  assert multi.evaluations[0].judgment is not None
 ```
 
 See `docs/TESTING.md` for markers and commands.
@@ -152,9 +155,9 @@ See `docs/TESTING.md` for markers and commands.
 
 1. Install: `uv add pondera`
 2. Write a case YAML under `eval/cases/`
-3. Implement a runner with `async run(...)-> {"answer_markdown": str}`
+3. Implement a runner with `async run(...)-> {"answer": str}`
 4. Call `evaluate_case(path, runner=RunnerImpl(), judge=Judge())`
-5. Use results / save artifacts however you like
+5. Use `multi.evaluations[0]` for single runs or iterate for reproducibility studies
 
 
 

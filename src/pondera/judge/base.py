@@ -35,7 +35,7 @@ class Judge(JudgeProtocol):
         self,
         *,
         question: str,
-        answer_markdown: str,
+        answer: str,
         files: list[str] | None,
         judge_request: str,
         rubric: list[RubricCriterion] | None = None,
@@ -94,7 +94,7 @@ class Judge(JudgeProtocol):
             {question}
 
             Assistant answer (Markdown):
-            {answer_markdown}
+            {answer}
 
             Generated files (paths):
             {files_section}{files_content_block}

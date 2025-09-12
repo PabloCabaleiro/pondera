@@ -67,7 +67,7 @@ class TestNormalizeRunResult:
 
     def test_normalize_run_result_already_run_result(self) -> None:
         """Test that RunResult objects are returned as-is."""
-        original = RunResult(question="Test question", answer_markdown="Test answer")
+        original = RunResult(question="Test question", answer="Test answer")
 
         result = normalize_run_result(original, question="Different question")
 
@@ -76,21 +76,21 @@ class TestNormalizeRunResult:
 
     def test_normalize_run_result_from_dict_minimal(self) -> None:
         """Test normalization from minimal dict."""
-        result_dict = {"answer_markdown": "Test answer"}
+        result_dict = {"answer": "Test answer"}
         question = "What is the answer?"
 
         result = normalize_run_result(result_dict, question=question)
 
         assert isinstance(result, RunResult)
         assert result.question == question
-        assert result.answer_markdown == "Test answer"
+        assert result.answer == "Test answer"
         assert result.artifacts == []
         assert result.metadata == {}
 
     def test_normalize_run_result_from_dict_complete(self) -> None:
         """Test normalization from complete dict."""
         result_dict = {
-            "answer_markdown": "Complete answer",
+            "answer": "Complete answer",
             "artifacts": ["file1.txt", "file2.pdf"],
             "metadata": {"steps": 5, "duration": 1.23},
         }
@@ -100,13 +100,13 @@ class TestNormalizeRunResult:
 
         assert isinstance(result, RunResult)
         assert result.question == question
-        assert result.answer_markdown == "Complete answer"
+        assert result.answer == "Complete answer"
         assert result.artifacts == ["file1.txt", "file2.pdf"]
         assert result.metadata == {"steps": 5, "duration": 1.23}
 
     def test_normalize_run_result_dict_overrides_question(self) -> None:
         """Test that question in dict overrides parameter."""
-        result_dict = {"question": "Dict question", "answer_markdown": "Test answer"}
+        result_dict = {"question": "Dict question", "answer": "Test answer"}
 
         result = normalize_run_result(result_dict, question="Param question")
 
@@ -115,7 +115,7 @@ class TestNormalizeRunResult:
 
     def test_normalize_run_result_invalid_dict(self) -> None:
         """Test error handling for invalid dict."""
-        result_dict = {"invalid_field": "value"}  # Missing required answer_markdown
+        result_dict = {"invalid_field": "value"}  # Missing required answer
 
         with pytest.raises(RunnerError) as exc_info:
             normalize_run_result(result_dict, question="Test question")
@@ -194,14 +194,14 @@ class TestRunnerProtocol:
                 params: dict[str, Any] | None = None,
                 progress: ProgressCallback | None = None,
             ) -> RunResult:
-                return RunResult(question=question, answer_markdown=f"Mock answer for: {question}")
+                return RunResult(question=question, answer=f"Mock answer for: {question}")
 
         runner = MockRunner()
         result = await runner.run(question="Test question")
 
         assert isinstance(result, RunResult)
         assert result.question == "Test question"
-        assert "Mock answer for: Test question" in result.answer_markdown
+        assert "Mock answer for: Test question" in result.answer
 
     @pytest.mark.asyncio
     async def test_runner_with_all_parameters(self) -> None:
@@ -224,7 +224,7 @@ class TestRunnerProtocol:
 
                 return RunResult(
                     question=question,
-                    answer_markdown=f"Answer\n{attachment_info}\n{param_info}",
+                    answer=f"Answer\n{attachment_info}\n{param_info}",
                     metadata={"processed": True},
                 )
 
@@ -239,8 +239,8 @@ class TestRunnerProtocol:
         )
 
         assert result.question == "Full test"
-        assert "Attachments: 2" in result.answer_markdown
-        assert "temperature" in result.answer_markdown
+        assert "Attachments: 2" in result.answer
+        assert "temperature" in result.answer
         assert result.metadata["processed"] is True
         progress_callback.assert_called_once_with("Starting processing")
 

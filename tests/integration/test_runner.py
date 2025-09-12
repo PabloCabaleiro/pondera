@@ -28,7 +28,7 @@ class TestRunner:
     ) -> RunResult:
         return RunResult(
             question=question,
-            answer_markdown=self.response,
+            answer=self.response,
             metadata={"test": True, "params": params or {}},
         )
 
@@ -54,7 +54,7 @@ class MathTestRunner:
             answer = "I can only solve simple arithmetic problems like 2+2, 3*3, or 10/2"
         return RunResult(
             question=question,
-            answer_markdown=answer,
+            answer=answer,
             metadata={"solver": "simple_math", "params": params or {}},
         )
 

@@ -67,7 +67,7 @@ def write_case_artifacts(artifacts_root: Path | str, res: EvaluationResult) -> P
     case_dir.mkdir(parents=True, exist_ok=True)
 
     # answer.md
-    (case_dir / "answer.md").write_text(res.run.answer_markdown or "", encoding="utf-8")
+    (case_dir / "answer.md").write_text(res.run.answer or "", encoding="utf-8")
 
     # judgment.json
     (case_dir / "judgment.json").write_text(

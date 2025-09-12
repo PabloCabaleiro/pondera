@@ -22,7 +22,7 @@ class JudgeProtocol(Protocol):
         self,
         *,
         question: str,
-        answer_markdown: str,
+        answer: str,
         files: list[str] | None,
         judge_request: str,
         rubric: list[RubricCriterion] | None = None,

@@ -57,7 +57,7 @@ class TestJudge:
         # Call judge method
         result = await judge.judge(
             question="What is 2+2?",
-            answer_markdown="2+2 = 4",
+            answer="2+2 = 4",
             files=[],
             judge_request="Check if the answer is correct",
         )
@@ -89,7 +89,7 @@ class TestJudge:
         # Call judge method (no model parameter in new implementation)
         result = await judge.judge(
             question="What is 2+2?",
-            answer_markdown="2+2 = 4",
+            answer="2+2 = 4",
             files=[],
             judge_request="Check if the answer is correct",
         )
@@ -112,7 +112,7 @@ class TestJudge:
             with pytest.raises(JudgeError, match="No rubric provided or configured"):
                 await judge.judge(
                     question="What is 2+2?",
-                    answer_markdown="2+2 = 4",
+                    answer="2+2 = 4",
                     files=[],
                     judge_request="Check if the answer is correct",
                 )
@@ -137,7 +137,7 @@ class TestJudge:
 
         result = await judge.judge(
             question="What is 2+2?",
-            answer_markdown="2+2 = 4",
+            answer="2+2 = 4",
             files=[],
             judge_request="Check if the answer is correct",
             rubric=custom_rubric,
