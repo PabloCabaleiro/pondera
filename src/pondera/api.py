@@ -18,7 +18,6 @@ from pondera.models.multi_evaluation import (
 from pondera.models.case import CaseSpec
 from pondera.settings import get_settings
 from pondera.utils import load_case_yaml, apply_prejudge_checks, compute_pass, choose_rubric
-from pondera.io.artifacts import write_case_artifacts
 from pondera.io.artifacts import write_multi_evaluation_artifacts  # type: ignore
 import logging
 
@@ -116,11 +115,9 @@ async def evaluate_case_async(
         primary_metric=primary_metric,
     )
     if artifacts_root:
-        # Preserve existing single-run artifact layout for backward compatibility.
-        if reps == 1:
-            write_case_artifacts(artifacts_root, evaluations[0])
-        else:
-            write_multi_evaluation_artifacts(artifacts_root, multi)
+        write_multi_evaluation_artifacts(artifacts_root, multi)
+
+    # Log summary
     overall_repr = multi.aggregates.overall.model_dump()
     log.debug(
         "case %s repetitions=%d primary_metric=%s overall=%s passed=%s",
