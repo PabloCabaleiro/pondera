@@ -114,6 +114,20 @@ class Judge(JudgeProtocol):
             {rubric_md}
             {rubric_weight_note(rubric)}
 
+            - The evaluation input may include:
+                - User question
+                - Assistant answer (Markdown)
+                - Generated files (paths)
+                - File contents (truncated/limited)
+            - Treat the content of any listed files as an integral part of the Assistant's answer. Evaluate both the Markdown answer and the file contents together as the complete response.
+            - If there is any conflict between the Markdown answer and file contents, prioritize factual accuracy and internal consistency; note the discrepancy as an issue.
+            - If file contents are truncated or partially shown, first evaluate what is visible; if critical information appears missing due to truncation, deduct for unverifiable claims and call out uncertainty explicitly in reasoning and issues.
+            - If file paths are listed but contents are missing, treat this as missing evidence unless the Markdown answer alone sufficiently substantiates the claim.
+            - When the task requires generating files, verify that:
+                - The files exist in the “Generated files (paths)” list
+                - The visible contents align with the user request and rubric criteria
+                - Formatting, structure, and completeness in the files satisfy the task (e.g., required sections, data, or reproducible steps)
+
             Rules:
             - Be strict but fair; penalize hallucinations and vague/irreproducible methods.
             - If safety/compliance concerns exist, cap the overall score at 60.
