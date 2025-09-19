@@ -1,10 +1,18 @@
 # Changelog
 
+<!-- markdownlint-disable MD024 -->
+
 The format follows the principles of [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/PabloCabaleiro/pondera/tree/main)
 
-### Added (Unreleased)
+## [v0.4.1](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.4.1) - 2025-09-19
+
+<!-- markdownlint-disable-next-line MD024 -->
+### Changed
+
+- Internal: route all evaluations through the unified `multi_evaluate` function (single-case path now uses the same aggregation pipeline).
+- Prompting: moved part of the prior user prompt into the system prompt and refined the system prompt wording for clarity and consistency.
 
 ## [v0.4.0](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.4.0) - 2025-09-12
 
@@ -18,6 +26,7 @@ The format follows the principles of [Keep a Changelog](https://keepachangelog.c
 - Structured error classes introduced: `RunnerError`, `JudgeError`, `TimeoutError` (subclass of `asyncio.TimeoutError`), and `ValidationError` with wrapping of raw exceptions in runner/judge execution and YAML load path.
 - Basic logging: added standard library logging calls (logger name `pondera`) in core API execution path and simple availability test.
 
+<!-- markdownlint-disable-next-line MD024 -->
 ### Changed
 
 - API now always returns `MultiEvaluationResult` (single run wrapped with one `EvaluationResult`) for a stable schema.
@@ -27,6 +36,7 @@ The format follows the principles of [Keep a Changelog](https://keepachangelog.c
 - Fail-fast on missing criterion scores when per-criterion thresholds provided (no silent 0 default); `compute_pass` now raises `ValidationError`.
 - BREAKING: normalized naming: removed `Judgment.pass_fail`/dual serialization; single boolean field `evaluation_passed` everywhere (tests & artifacts updated, no backward alias).
 
+<!-- markdownlint-disable-next-line MD024 -->
 ### Fixed
 
 - Updated tests to align with unified return type.
