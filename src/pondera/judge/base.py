@@ -87,14 +87,6 @@ class Judge(JudgeProtocol):
 
             Evaluation request (instructions for the judge):
             {judge_request}
-
-            Task:
-            1) Score each rubric criterion from 0-100.
-            2) Compute the weighted overall score (0-100) according to the rubric weights.
-            3) Identify concrete issues (if any).
-            4) Provide 2-6 actionable suggestions.
-
-            Return ONLY a valid object for the `Judgment` schema.
         """.strip()
 
         result, _nodes = await run_agent(agent, user_prompt)
@@ -126,5 +118,14 @@ class Judge(JudgeProtocol):
             - Be strict but fair; penalize hallucinations and vague/irreproducible methods.
             - If safety/compliance concerns exist, cap the overall score at 60.
             - Keep suggestions concrete and actionable.
+
+            Task:
+            1) Score each rubric criterion from 0-100.
+            2) Compute the weighted overall score (0-100) according to the rubric weights.
+            3) Identify concrete issues (if any).
+            4) Provide 2-6 actionable suggestions.
+
+            Return ONLY a valid object for the `Judgment` schema.
+
             {extra}
         """.strip()
