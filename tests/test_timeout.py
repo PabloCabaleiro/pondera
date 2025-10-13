@@ -49,6 +49,7 @@ class SlowJudge(JudgeProtocol):
         judge_request: str,
         rubric: list[RubricCriterion] | None = None,
         system_append: str = "",
+        error: str | None = None,
     ) -> Judgment:
         await asyncio.sleep(2)  # longer than timeout
         return Judgment(
@@ -63,8 +64,36 @@ class SlowJudge(JudgeProtocol):
 
 @pytest.mark.asyncio
 async def test_runner_timeout() -> None:
-    with pytest.raises(asyncio.TimeoutError):
-        await evaluate_case_async(TIMEOUT_CASE_PATH, runner=SleepRunner())
+    # Now that runner errors are caught, we need to provide a judge
+    class QuickJudge(JudgeProtocol):
+        async def judge(
+            self,
+            *,
+            question: str,
+            answer: str,
+            files: list[str] | None,
+            judge_request: str,
+            rubric: list[RubricCriterion] | None = None,
+            system_append: str = "",
+            error: str | None = None,
+        ) -> Judgment:
+            return Judgment(
+                score=0,
+                evaluation_passed=False,
+                reasoning=f"Runner error: {error}" if error else "No error",
+                criteria_scores={"overall": 0},
+                issues=[error] if error else [],
+                suggestions=[],
+            )
+
+    result = await evaluate_case_async(TIMEOUT_CASE_PATH, runner=SleepRunner(), judge=QuickJudge())
+    # Runner timeout should be captured as an error in the result
+    assert len(result.evaluations) == 1
+    assert result.evaluations[0].run.error is not None
+    assert (
+        "TimeoutError" in result.evaluations[0].run.error
+        or "timed out" in result.evaluations[0].run.error
+    )
 
 
 @pytest.mark.asyncio

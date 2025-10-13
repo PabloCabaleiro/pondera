@@ -22,6 +22,8 @@ class RunResult(BaseModel):
     files: list[str] = Field(default_factory=list)
     # any useful metadata (steps, timings, costs, tool usage, etc.)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # error details if runner failed (exception type and message)
+    error: str | None = Field(default=None)
 
     def __str__(self) -> str:  # pragma: no cover - trivial
         meta_keys = sorted(self.metadata.keys())

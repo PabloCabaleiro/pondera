@@ -32,6 +32,7 @@ class Judge(JudgeProtocol):
         judge_request: str,
         rubric: list[RubricCriterion] | None = None,
         system_append: str = "",
+        error: str | None = None,
     ) -> Judgment:
         rb = rubric or self._default_rubric
         if not rb:
@@ -75,12 +76,14 @@ class Judge(JudgeProtocol):
             else ""
         )
 
+        error_section = f"\n\nRunner Error:\n{error}" if error else ""
+
         user_prompt = f"""
             User question:
             {question}
 
             Assistant answer (Markdown):
-            {answer}
+            {answer}{error_section}
 
             Generated files (paths):
             {files_section}{files_content_block}
@@ -119,6 +122,12 @@ class Judge(JudgeProtocol):
                 - Assistant answer (Markdown)
                 - Generated files (paths)
                 - File contents (truncated/limited)
+                - Runner Error (if the runner failed during execution)
+            - If a "Runner Error" section is present, the runner failed and did not produce a valid answer. Evaluate based on the error:
+                - Score should typically be 0 or very low across all criteria
+                - Document the error type and message in reasoning and issues
+                - Note whether the error was a timeout, configuration issue, or other failure
+                - Provide suggestions on what might have caused the failure if apparent from the error message
             - Treat the content of any listed files as an integral part of the Assistant's answer. Evaluate both the Markdown answer and the file contents together as the complete response.
             - If there is any conflict between the Markdown answer and file contents, prioritize factual accuracy and internal consistency; note the discrepancy as an issue.
             - If file contents are truncated or partially shown, first evaluate what is visible; if critical information appears missing due to truncation, deduct for unverifiable claims and call out uncertainty explicitly in reasoning and issues.
