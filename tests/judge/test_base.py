@@ -92,3 +92,42 @@ async def test_judge_user_prompt_format(
         judge_request="Evaluate factual accuracy",
     )
     mock_run_agent.assert_called_once()
+
+
+@patch("pondera.judge.base.get_agent")
+@patch("pondera.judge.base.run_agent")
+@patch("pondera.judge.base.default_rubric")
+@pytest.mark.asyncio
+async def test_judge_calls_get_agent_with_toolsets(
+    mock_default_rubric: Any, mock_run_agent: Any, mock_get_agent: Any
+) -> None:
+    """Test that judge passes toolsets to get_agent."""
+
+    def sample_tool(x: int) -> int:
+        """Sample tool that doubles input."""
+        return x * 2
+
+    mock_default_rubric.return_value = [
+        RubricCriterion(name="accuracy", weight=1.0, description="How accurate")
+    ]
+    mock_agent = Mock()
+    mock_get_agent.return_value = mock_agent
+    expected_judgment = Judgment(
+        score=90, evaluation_passed=True, reasoning="Excellent", criteria_scores={"accuracy": 90}
+    )
+    mock_run_agent.return_value = (expected_judgment, [])
+    judge = Judge(toolsets=(sample_tool,))
+
+    await judge.judge(
+        question="What is 2+2?",
+        answer="4",
+        files=None,
+        judge_request="Evaluate the answer.",
+    )
+
+    mock_get_agent.assert_called_once()
+    call_kwargs = mock_get_agent.call_args.kwargs
+    assert "toolsets" in call_kwargs
+    assert call_kwargs["toolsets"] == (sample_tool,)
+    assert call_kwargs["output_type"] == Judgment
+    mock_run_agent.assert_called_once()

@@ -1,5 +1,6 @@
 # src/pondera/judge/base.py
 from pathlib import Path
+from typing import Any
 
 from pondera.models.rubric import RubricCriterion
 from pondera.models.judgment import Judgment
@@ -18,10 +19,12 @@ class Judge(JudgeProtocol):
         model: str | None = None,
         rubric: list[RubricCriterion] | None = None,
         system_append: str = "",
+        toolsets: tuple[Any, ...] = (),
     ) -> None:
         self._default_rubric = rubric or default_rubric()
         self._system_append = system_append
         self._model = model
+        self._toolsets = toolsets
 
     async def judge(
         self,
@@ -41,7 +44,7 @@ class Judge(JudgeProtocol):
         use_system = self._system_prompt(
             rb, self._system_append + ("\n" + system_append if system_append else "")
         )
-        agent = get_agent(system_prompt=use_system, output_type=Judgment)
+        agent = get_agent(system_prompt=use_system, output_type=Judgment, toolsets=self._toolsets)
 
         files_section = "\n".join(f"- {p}" for p in (files or [])) or "(none)"
 
