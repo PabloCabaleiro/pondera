@@ -6,6 +6,14 @@ The format follows the principles of [Keep a Changelog](https://keepachangelog.c
 
 ## [Unreleased](https://github.com/PabloCabaleiro/pondera/tree/main)
 
+
+## [v0.5.0](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.5.0) - 2025-09-19
+
+<!-- markdownlint-disable-next-line MD024 -->
+### Changed
+
+- Capturing `RunnerError` and `TimeoutError` when executing the evaluation cases.
+
 ## [v0.4.1](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.4.1) - 2025-09-19
 
 <!-- markdownlint-disable-next-line MD024 -->
