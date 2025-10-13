@@ -16,6 +16,7 @@ from pondera.models.multi_evaluation import (
     CriteriaAggregates,
 )
 from pondera.models.case import CaseSpec
+from pondera.models.run import RunResult
 from pondera.settings import get_settings
 from pondera.utils import load_case_yaml, apply_prejudge_checks, compute_pass, choose_rubric
 from pondera.io.artifacts import write_multi_evaluation_artifacts  # type: ignore
@@ -36,8 +37,17 @@ async def _execute_case_once(
     await emit_progress(progress, f"pondera: running case '{case.id}'…")
     log.debug("case %s: starting runner", case.id)
     t0 = time.perf_counter()
-    run_res = await _run_case(case, runner, progress)
-    t1 = time.perf_counter()
+    try:
+        run_res = await _run_case(case, runner, progress)
+        t1 = time.perf_counter()
+    except (TimeoutError, RunnerError) as ex:
+        t1 = time.perf_counter()
+        log.warning("case %s: runner failed: %s", case.id, str(ex))
+        run_res = RunResult(
+            question=case.input.query,
+            answer="",
+            error=f"{type(ex).__name__}: {str(ex)}",
+        )
     failures = apply_prejudge_checks(run_res.answer or "", case)
     use_rubric = choose_rubric(case.judge.rubric, default_rubric)
     await emit_progress(progress, "pondera: judging answer…")
@@ -49,13 +59,14 @@ async def _execute_case_once(
     timings = _get_timings(t0, t1, t2, t3)
     passed = _compute_pass(case, failures, judgment)
     log.info(
-        "case %s completed: passed=%s score=%s failures=%d runner_s=%.3f judge_s=%.3f",
+        "case %s completed: passed=%s score=%s failures=%d runner_s=%.3f judge_s=%.3f error=%s",
         case.id,
         passed,
         getattr(judgment, "score", None),
         len(failures),
         timings["runner_s"],
         timings["judge_s"],
+        run_res.error is not None,
     )
     return EvaluationResult(
         case_id=case.id,
@@ -163,6 +174,7 @@ async def _judge_case(
                 judge_request=case.judge.request,
                 rubric=rubric,
                 system_append=case.judge.system_append,
+                error=getattr(run_res, "error", None),
             ),
             timeout=case.timeout_s,
         )

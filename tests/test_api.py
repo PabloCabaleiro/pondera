@@ -71,6 +71,7 @@ class MockJudge:
         rubric: list[RubricCriterion] | None = None,
         model: str | None = None,
         system_append: str | None = None,
+        error: str | None = None,
     ) -> Judgment:
         self.call_count += 1
         self.last_call_args = {
@@ -80,6 +81,7 @@ class MockJudge:
             "judge_request": judge_request,
             "rubric": rubric,
             "system_append": system_append,
+            "error": error,
         }
 
         if self.delay > 0:

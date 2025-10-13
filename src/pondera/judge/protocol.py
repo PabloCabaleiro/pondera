@@ -27,6 +27,7 @@ class JudgeProtocol(Protocol):
         judge_request: str,
         rubric: list[RubricCriterion] | None = None,
         system_append: str = "",
+        error: str | None = None,
     ) -> Judgment: ...
 
 
