@@ -101,9 +101,9 @@ class ConstantJudge(JudgeProtocol):
 
 ```bash
 # Using uv (recommended)
-uv add 'git+ssh://git@github.com/PabloCabaleiro/pondera.git@v0.6.0'
+uv add 'git+ssh://git@github.com/PabloCabaleiro/pondera.git@v0.6.1'
 # or from source in editable mode
-uv pip install 'git+ssh://git@github.com/PabloCabaleiro/pondera.git@v0.6.0'
+uv pip install 'git+ssh://git@github.com/PabloCabaleiro/pondera.git@v0.6.1'
 ```
 
 The judge uses the pydantic-ai ecosystem. Configure provider credentials via env vars (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `AZURE_OPENAI_API_KEY`, etc.) plus optional `PONDERA_` settings.

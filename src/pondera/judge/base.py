@@ -19,12 +19,12 @@ class Judge(JudgeProtocol):
         model: str | None = None,
         rubric: list[RubricCriterion] | None = None,
         system_append: str = "",
-        toolsets: tuple[Any, ...] = (),
+        tools: tuple[Any, ...] = (),
     ) -> None:
         self._default_rubric = rubric or default_rubric()
         self._system_append = system_append
         self._model = model
-        self._toolsets = toolsets
+        self._tools = tools
 
     async def judge(
         self,
@@ -44,7 +44,7 @@ class Judge(JudgeProtocol):
         use_system = self._system_prompt(
             rb, self._system_append + ("\n" + system_append if system_append else "")
         )
-        agent = get_agent(system_prompt=use_system, output_type=Judgment, toolsets=self._toolsets)
+        agent = get_agent(system_prompt=use_system, output_type=Judgment, tools=self._tools)
 
         files_section = "\n".join(f"- {p}" for p in (files or [])) or "(none)"
 

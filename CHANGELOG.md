@@ -7,6 +7,14 @@ The format follows the principles of [Keep a Changelog](https://keepachangelog.c
 ## [Unreleased](https://github.com/PabloCabaleiro/pondera/tree/main)
 
 
+## [v0.6.1](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.6.1) - 2025-10-15
+
+<!-- markdownlint-disable-next-line MD024 -->
+### Fixed
+
+- Renamed `toolsets` parameter to `tools` in Judge constructor and internal implementation for consistency with PydanticAI API
+
+
 ## [v0.6.0](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.6.0) - 2025-10-13
 
 <!-- markdownlint-disable-next-line MD024 -->

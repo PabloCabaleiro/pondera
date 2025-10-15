@@ -163,7 +163,6 @@ def get_agent(
     instructions: str | None = None,
     system_prompt: str | tuple[str, ...] = (),
     tools: tuple[Any, ...] = (),
-    toolsets: tuple[Any, ...] = (),
     model_settings: ModelSettings | None = None,
     output_type: Any = str,
     deps_type: type = NoneType,
@@ -184,7 +183,6 @@ def get_agent(
         deps_type=deps_type,
         model_settings=model_settings,
         tools=tools,
-        toolsets=toolsets,
         instrument=True,
     )
     return agent

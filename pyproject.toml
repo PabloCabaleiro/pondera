@@ -1,6 +1,6 @@
 [project]
 name = "pondera"
-version = "0.6.0"
+version = "0.6.1"
 description = "YAML-first, pluggable runners & LLM-as-a-judge evaluation framework."
 readme = "README.md"
 requires-python = ">=3.10"
