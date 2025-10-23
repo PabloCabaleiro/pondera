@@ -11,7 +11,7 @@ from pondera.models.rubric import RubricCriterion
 class CaseExpectations(BaseModel):
     """Pre-judge assertions against the produced answer text/markdown."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     must_contain: list[str] = Field(default_factory=list)
     must_not_contain: list[str] = Field(default_factory=list)
@@ -26,7 +26,7 @@ class CaseExpectations(BaseModel):
 class CaseInput(BaseModel):
     """Inputs forwarded to the runner."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     query: str = Field(..., min_length=1)
     attachments: list[str] = Field(default_factory=list)  # file paths (optional)
@@ -41,7 +41,7 @@ class CaseInput(BaseModel):
 class CaseJudge(BaseModel):
     """How to evaluate the answer (per-case overrides allowed)."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     request: str = Field(
         default="Judge for factual correctness, completeness, and clarity. "
@@ -77,7 +77,7 @@ class CaseJudge(BaseModel):
 class CaseSpec(BaseModel):
     """Full case definition loaded from YAML."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     id: str = Field(..., min_length=1)
     input: CaseInput

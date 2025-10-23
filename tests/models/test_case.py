@@ -28,13 +28,6 @@ class TestCaseExpectations:
         assert expectations.must_not_contain == ["error", "fail"]
         assert expectations.regex_must_match == [r"\d+", r"[A-Z]+"]
 
-    def test_extra_fields_forbidden(self) -> None:
-        """Test that extra fields are forbidden."""
-        with pytest.raises(ValidationError) as exc_info:
-            CaseExpectations(extra_field="not allowed")  # type: ignore
-
-        assert "Extra inputs are not permitted" in str(exc_info.value)
-
 
 class TestCaseInput:
     """Tests for CaseInput model."""
@@ -72,13 +65,6 @@ class TestCaseInput:
             CaseInput()  # type: ignore
 
         assert "Field required" in str(exc_info.value)
-
-    def test_extra_fields_forbidden(self) -> None:
-        """Test that extra fields are forbidden."""
-        with pytest.raises(ValidationError) as exc_info:
-            CaseInput(query="test", extra_field="not allowed")  # type: ignore
-
-        assert "Extra inputs are not permitted" in str(exc_info.value)
 
 
 class TestCaseJudge:
@@ -126,13 +112,6 @@ class TestCaseJudge:
             CaseJudge(overall_threshold=-1)
 
         assert "Input should be greater than or equal to 0" in str(exc_info.value)
-
-    def test_extra_fields_forbidden(self) -> None:
-        """Test that extra fields are forbidden."""
-        with pytest.raises(ValidationError) as exc_info:
-            CaseJudge(extra_field="not allowed")  # type: ignore
-
-        assert "Extra inputs are not permitted" in str(exc_info.value)
 
 
 class TestCaseSpec:
@@ -199,12 +178,3 @@ class TestCaseSpec:
             CaseSpec(id="test", input=case_input, timeout_s=-10)
 
         assert "Input should be greater than 0" in str(exc_info.value)
-
-    def test_extra_fields_forbidden(self) -> None:
-        """Test that extra fields are forbidden."""
-        case_input = CaseInput(query="test")
-
-        with pytest.raises(ValidationError) as exc_info:
-            CaseSpec(id="test", input=case_input, extra_field="not allowed")  # type: ignore
-
-        assert "Extra inputs are not permitted" in str(exc_info.value)

@@ -68,14 +68,3 @@ class TestJudgment:
             score=50, evaluation_passed=False, reasoning="No specific criteria", criteria_scores={}
         )
         assert judgment.criteria_scores == {}
-
-    def test_extra_fields_forbidden(self) -> None:
-        with pytest.raises(ValidationError) as exc_info:
-            Judgment(
-                score=80,
-                evaluation_passed=True,
-                reasoning="test",
-                criteria_scores={},
-                extra_field="not allowed",  # extra field to trigger validation error
-            )
-        assert "Extra inputs are not permitted" in str(exc_info.value)

@@ -53,18 +53,6 @@ class TestRubricCriterion:
         error_str = str(exc_info.value)
         assert "Field required" in error_str
 
-    def test_extra_fields_forbidden(self) -> None:
-        """Test that extra fields are forbidden."""
-        with pytest.raises(ValidationError) as exc_info:
-            RubricCriterion(
-                name="test",
-                weight=1.0,
-                description="test",
-                extra_field="not allowed",  # type: ignore
-            )
-
-        assert "Extra inputs are not permitted" in str(exc_info.value)
-
 
 class TestRubric:
     """Tests for Rubric model."""
@@ -105,12 +93,3 @@ class TestRubric:
         rubric = Rubric(rubric=criteria)
 
         assert rubric.total_weight() == 4.5
-
-    def test_extra_fields_forbidden(self) -> None:
-        """Test that extra fields are forbidden."""
-        criteria = [RubricCriterion(name="test", weight=1.0, description="test")]
-
-        with pytest.raises(ValidationError) as exc_info:
-            Rubric(rubric=criteria, extra_field="not allowed")  # type: ignore
-
-        assert "Extra inputs are not permitted" in str(exc_info.value)

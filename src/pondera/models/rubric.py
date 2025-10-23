@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator
 class RubricCriterion(BaseModel):
     """One rubric axis: name, weight (>0), description."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     name: str = Field(..., min_length=1)
     weight: float = Field(..., gt=0.0)
@@ -18,7 +18,7 @@ class RubricCriterion(BaseModel):
 class Rubric(BaseModel):
     """A collection of rubric criteria."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     rubric: list[RubricCriterion] = Field(default_factory=list)
 

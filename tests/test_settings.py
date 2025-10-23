@@ -244,22 +244,6 @@ PONDERA_OPENAI_API_KEY=sk-from-file
                 finally:
                     os.chdir(original_cwd)
 
-    def test_extra_fields_ignored(self) -> None:
-        """Test that extra fields in environment are ignored."""
-        with patch.dict(
-            os.environ,
-            {
-                "PONDERA_UNKNOWN_FIELD": "should_be_ignored",
-                "PONDERA_LOG_LEVEL": "DEBUG",
-            },
-            clear=False,
-        ):
-            # This should not raise an error
-            settings = PonderaSettings()
-            assert settings.log_level == "DEBUG"
-            # Unknown field should not be accessible
-            assert not hasattr(settings, "unknown_field")
-
 
 class TestSetIfMissing:
     """Test the _set_if_missing helper function."""

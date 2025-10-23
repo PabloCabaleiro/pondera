@@ -6,6 +6,12 @@ The format follows the principles of [Keep a Changelog](https://keepachangelog.c
 
 ## [Unreleased](https://github.com/PabloCabaleiro/pondera/tree/main)
 
+## [v0.6.2](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.6.2) - 2025-10-23
+
+<!-- markdownlint-disable-next-line MD024 -->
+### Fixed
+
+- Changed Pydantic model configuration from `extra="forbid"` to `extra="ignore"` across all models (`CaseExpectations`, `CaseInput`, `CaseJudge`, `EvaluationResult`, `Judgment`, `ScoreAggregate`, `CriteriaAggregates`, `MultiEvaluationResult`, `RubricCriterion`, `Rubric`, `RunResult`, `CaseSpec`).
 
 ## [v0.6.1](https://github.com/PabloCabaleiro/pondera/releases/tag/v0.6.1) - 2025-10-15
 

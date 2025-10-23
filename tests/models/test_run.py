@@ -106,11 +106,3 @@ print("Hello, World!")
         assert "# Title" in result.answer
         assert "```python" in result.answer
         assert "**Bold text**" in result.answer
-
-    def test_extra_fields_forbidden(self) -> None:
-        with pytest.raises(ValidationError) as exc_info:
-            RunResult(
-                question="test",
-                extra_field="not allowed",  # extra field should trigger validation error
-            )
-        assert "Extra inputs are not permitted" in str(exc_info.value)

@@ -113,15 +113,6 @@ class TestNormalizeRunResult:
         # Dict value should take precedence due to **result spread
         assert result.question == "Dict question"
 
-    def test_normalize_run_result_invalid_dict(self) -> None:
-        """Test error handling for invalid dict."""
-        result_dict = {"invalid_field": "value"}  # Missing required answer
-
-        with pytest.raises(RunnerError) as exc_info:
-            normalize_run_result(result_dict, question="Test question")
-
-        assert "Could not coerce dict result to RunResult" in str(exc_info.value)
-
     def test_normalize_run_result_invalid_type(self) -> None:
         """Test error handling for unsupported types."""
         invalid_result = "string result"

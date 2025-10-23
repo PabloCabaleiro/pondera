@@ -10,7 +10,7 @@ class EvaluationResult(BaseModel):
     including pre-judge checks and threshold evaluation.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     case_id: str
     case: CaseSpec

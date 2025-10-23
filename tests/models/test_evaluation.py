@@ -165,20 +165,3 @@ class TestEvaluationResult:
         with pytest.raises(ValidationError) as exc_info:
             EvaluationResult()  # intentional: trigger validation error with no fields
         assert "Field required" in str(exc_info.value)
-
-    def test_extra_fields_forbidden(self) -> None:
-        case_input = CaseInput(query="test")
-        case = CaseSpec(id="test", input=case_input)
-        run = RunResult(question="test")
-        judgment = Judgment(score=80, evaluation_passed=True, reasoning="test", criteria_scores={})
-        with pytest.raises(ValidationError) as exc_info:
-            EvaluationResult(
-                case_id="test",
-                case=case,
-                run=run,
-                judgment=judgment,
-                overall_threshold=70,
-                passed=True,
-                extra_field="not allowed",  # invalid extra field
-            )
-        assert "Extra inputs are not permitted" in str(exc_info.value)

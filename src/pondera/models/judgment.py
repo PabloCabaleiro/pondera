@@ -10,7 +10,7 @@ class Judgment(BaseModel):
     Typed grading result from the judge.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     score: int = Field(..., ge=0, le=100)
     evaluation_passed: bool

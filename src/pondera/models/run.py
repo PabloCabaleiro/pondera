@@ -12,7 +12,7 @@ class RunResult(BaseModel):
     Standardized runner output. The judge consumes `answer`.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     question: str
     answer: str = Field(default="")

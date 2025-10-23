@@ -12,7 +12,7 @@ class AggregationMetric(str, Enum):
 
 
 class ScoreAggregate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
     metric: AggregationMetric = Field(description="Primary aggregation metric requested.")
     min: float
     max: float
@@ -38,7 +38,7 @@ def aggregate_numbers(values: list[float], metric: AggregationMetric) -> ScoreAg
 
 
 class CriteriaAggregates(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
     overall: ScoreAggregate
     per_criterion: dict[str, ScoreAggregate]
 
@@ -46,7 +46,7 @@ class CriteriaAggregates(BaseModel):
 class MultiEvaluationResult(BaseModel):
     """Result of executing the same case multiple times to measure reproducibility."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     case_id: str
     evaluations: list[EvaluationResult] = Field(
